@@ -300,7 +300,7 @@ def getBSpline(P_,p, delta):
 
 
 
-def sampleCircle(x,y,radius,printSampling):
+def sampleCircle(x,y,radius,print_sampling):
     zi   = np.zeros(x.shape)
     xy_c = np.random.uniform(0,1,2)
     r    = np.sqrt( np.square(x-xy_c[0]) + np.square(y-xy_c[1]) )
@@ -315,13 +315,13 @@ def sampleCircle(x,y,radius,printSampling):
         'radius':radius
     }
 
-    if printSampling:
+    if print_sampling:
         print('circle       >>  origin {:.3f},{:.3f}\t>>  radius {:.3f}'.format(xy_c[0],xy_c[1],radius))
 
     return shapeParams,zi,surfacePts
 
 
-def sampleRectangle(x,y,L,printSampling):
+def sampleRectangle(x,y,L,print_sampling):
     zi        = np.zeros(x.shape)
     aspectRat = np.random.uniform(1.0,2.0)
     xy_c      = np.random.uniform(0,1,2)
@@ -366,14 +366,14 @@ def sampleRectangle(x,y,L,printSampling):
         'angle':angle
     }
 
-    if printSampling:
+    if print_sampling:
         print('rectangle    >>  origin {:.3f},{:.3f}\t>>  {:.3f}x{:.3f}\t>>  {:5.1f} deg'.format(
             xy_c[0],xy_c[1],L,L*aspectRat,angle*180.0/np.pi))
 
     return(shapeParams,zi,surfacePts)
 
 
-def sampleTriangle(x,y,L1,printSampling):
+def sampleTriangle(x,y,L1,print_sampling):
     xy_c    = np.random.uniform(0,1,2)
     phi1    = np.random.uniform(0,2.0*np.pi)
     phi2deg = np.random.uniform(minTriAngle,180.0-2.0*minTriAngle)
@@ -419,14 +419,14 @@ def sampleTriangle(x,y,L1,printSampling):
         'phi3':phi3,
     }
 
-    if printSampling:
+    if print_sampling:
         print('triangle     >>  origin {:.3f},{:.3f}\t>>  {:.3f},{:.3f},{:.3f}\t>>  {:5.1f} deg'.format(
             xy_c[0],xy_c[1],L1,L2,L3,phi1*180.0/np.pi))
 
     return shapeParams,zi,surfacePts
 
 
-def sampleBSpline(x,y,L,printSampling):
+def sampleBSpline(x,y,L,print_sampling):
     n_pts = np.random.randint(7,21)
     xy_c  = np.random.uniform(0,1,2)-0.5
 
@@ -480,7 +480,7 @@ def sampleBSpline(x,y,L,printSampling):
         # 'sfpts':surfacePts
     }
 
-    if printSampling:
+    if print_sampling:
         print('polygon      >>  origin {:.3f},{:.3f}\t>>  {:.3f},{:2.0f}\t>>  {:}'.format(
             xy_c[0],xy_c[1],L,n_pts,cwS))
 
@@ -677,25 +677,25 @@ def createSampleIllu(x,y,z,L_ref,n_shape,n_samp,n_ep_dat,x_illu,y_illu):
         l = max(0.1*l_ref,np.random.normal(l_ref,0.2*l_ref))
 
         if i_rand==0:    # circle
-            shapeParams, zi, surfacePts = sampleCircle(x,y,l,printSampling)
+            shapeParams, zi, surfacePts = sampleCircle(x,y,l,print_sampling)
             shapeList.append(shapeParams)
             z[zi==1.0] = 1.0
             surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
 
         elif i_rand==1:  # rectangle
-            shapeParams, zi, surfacePts = sampleRectangle(x,y,l,printSampling)
+            shapeParams, zi, surfacePts = sampleRectangle(x,y,l,print_sampling)
             shapeList.append(shapeParams)
             z[zi==0.0] = 1.0
             surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
 
         elif i_rand==2:  # triangle
-            shapeParams, zi, surfacePts = sampleTriangle(x,y,l,printSampling)
+            shapeParams, zi, surfacePts = sampleTriangle(x,y,l,print_sampling)
             shapeList.append(shapeParams)
             z[zi==0.0] = 1.0
             surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
 
         elif i_rand==3:  # polygon
-            shapeParams, zi, surfacePts = sampleBSpline(x,y,l,printSampling)
+            shapeParams, zi, surfacePts = sampleBSpline(x,y,l,print_sampling)
             shapeList.append(shapeParams)
             z[zi==1.0] = 1.0
             surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
@@ -745,22 +745,22 @@ def createSampleBinClass(x,y,z,L_ref,n_shape):
         l = max(0.1*l_ref,np.random.normal(l_ref,0.2*l_ref))
 
         if i_rand==0:    # circle
-            shapeParams, zi, surfacePts = sampleCircle(x,y,l,printSampling)
+            shapeParams, zi, surfacePts = sampleCircle(x,y,l,print_sampling)
             shapeList.append(shapeParams)
             z[zi==1.0] = 1.0
 
         elif i_rand==1:  # rectangle
-            shapeParams, zi, surfacePts = sampleRectangle(x,y,l,printSampling)
+            shapeParams, zi, surfacePts = sampleRectangle(x,y,l,print_sampling)
             shapeList.append(shapeParams)
             z[zi==0.0] = 1.0
 
         elif i_rand==2:  # triangle
-            shapeParams, zi, surfacePts = sampleTriangle(x,y,l,printSampling)
+            shapeParams, zi, surfacePts = sampleTriangle(x,y,l,print_sampling)
             shapeList.append(shapeParams)
             z[zi==0.0] = 1.0
 
         elif i_rand==3:  # polygon
-            shapeParams, zi, surfacePts = sampleBSpline(x,y,l,printSampling)
+            shapeParams, zi, surfacePts = sampleBSpline(x,y,l,print_sampling)
             shapeList.append(shapeParams)
             z[zi==1.0] = 1.0
 
