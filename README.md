@@ -3,7 +3,7 @@
 Predicting the signed distance field for a given geometry. All code is in the _src_ directory.  
 
 
-### Training data generation  
+## Training data generation  
 
 There are two options in training data generation: (1) generating training data for sdf prediction, 
 and (2) generating data for an encoder-decoder network.  
