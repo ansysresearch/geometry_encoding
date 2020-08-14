@@ -11,43 +11,85 @@ an enconder-sdf network w/o transfer learning, and (3) training an encoder-sdf n
 learning.
 
 ### (1) Training an encoder-decoder network
-  The executable script is: _./src/edTrainNetwork.py_  
-  The network will learn to encode an input geometry into a compressed state and then to predict the  
+  * The executable script is: _./src/edTrainNetwork.py_  
+  * The network will learn to encode an input geometry into a compressed state and then to predict the  
     geometry from that encoded state.  
-  Options:  
-    -a : network architecture id. is searched for in the _./src/networkLib3.py_ file.  
-    -d : dataset id. is searched for in the _./data/train-data/_ directory.  
-    -n : number of epochs to be trained  
-    -s : every how many epochs the state should be saved to a file in the _./data/network-parameters/_  
+  * Options:  
+    - -a : network architecture id. is searched for in the _./src/networkLib3.py_ file.  
+    - -d : dataset id. is searched for in the _./data/train-data/_ directory.  
+    - -n : number of epochs to be trained.  
+    - -s : every how many epochs the state should be saved to a file in the _./data/network-parameters/_  
            directory.  
-    -g : which gpu to use  
-    -c : case name which is used in the name of the saved network parameter files. can be used to  
-           distinguish different setups  
-    -f : training fraction. choose a value in (0.0,1.0).  
-    -b : batch size  
-    -p : print progress dot every how many batches  
-  Example:  
+    - -g : which gpu to use.  
+    - -c : case name which is used in the name of the saved network parameter files. can be used to  
+           distinguish different setups.  
+    - -f : training fraction. choose a value in (0.0,1.0).  
+    - -b : batch size.  
+    - -p : print progress dot every how many batches.  
+    - -l : learning rate.  
+  * Example:  
     `$ cd ./src`  
     `$ python edTrainNetwork.py -a 38 -d 21 -n 20 -s 5 -g 4 -c test-run-ed -f 0.9 -b 100 -p 5 >> log.txt &`  
 
 ### (2) Training an enconder-sdf network w/o transfer learning
-  The executable script is: _./src/sdfTrainNetwork.py_  
-  The network will learn to encode an input geometry into a compressed state and then to predict the signed  
+  * The executable script is: _./src/sdfTrainNetwork.py_  
+  * The network will learn to encode an input geometry into a compressed state and then to predict the signed  
     distance field from that encoded state and a given location.  
-  Options:  
-  Example:  
+  * Options:  
+    - -a : network architecture id. is searched for in the _./src/networkLib3.py_ file.  
+    - -d : dataset id. is searched for in the _./data/train-data/_ directory.  
+    - -n : number of epochs to be trained.  
+    - -s : every how many epochs the state should be saved to a file in the _./data/network-parameters/_  
+           directory.  
+    - -g : which gpu to use.  
+    - -c : case name which is used in the name of the saved network parameter files. can be used to  
+           distinguish different setups.  
+    - -f : training fraction. choose a value in (0.0,1.0).  
+    - -b : batch size.  
+    - -p : print progress dot every how many batches.  
+    - -l : learning rate.  
+    - -k : eikonal loss term factor. if unspecified or zero, not eikonal loss will be used.  
+    - -w : weighted L1 loss shape width. if unspecified or zero, not weighted L1 loss will be used.  
+  * Example:  
     `$ cd ./src`  
     `$ python sdfTrainNetwork.py -a 68 -d 5 -n 20 -s 5 -g 4 -c test-run-sdf -k 0.1 -w 0.1 -b 125 >> log.txt &`  
+  * More details:  
+    - The weighting function for the weighted L1 loss can be modified in the file _./src/SdfTrain.py_. It must be  
+      modified twice, for the training loss and for the test loss computations. Those modifications are made from  
+      line 65 on and from line 97 on, respectively. In the code there two different shapes implemented already,  
+      one with an exponential decay, and one with a cosine and exponential decay term.  
+    - The stencil half-width of the finite difference derivative calculations of the eikonal loss term is defined 
+      in _./src/parseArgs.py_ in line 79.
 
 ### (3) Training an encoder-sdf network w/ transfer learning
-  The executable script is: _./src/sdfTrainNetworkTL.py_  
-  The network will load an encoder from a file and learn to predict the signed distance field from an  
+  * The executable script is: _./src/sdfTrainNetworkTL.py_  
+  * The network will load an encoder from a file and learn to predict the signed distance field from an  
     encoded state and a given location.  
-  Options:  
-  Example:  
+  * Options:  
+    - -a : network architecture id. is searched for in the _./src/networkLib3.py_ file.  
+    - -d : dataset id. is searched for in the _./data/train-data/_ directory.  
+    - -n : number of epochs to be trained.  
+    - -s : every how many epochs the state should be saved to a file in the _./data/network-parameters/_  
+           directory.  
+    - -g : which gpu to use.  
+    - -c : case name which is used in the name of the saved network parameter files. can be used to  
+           distinguish different setups.  
+    - -f : training fraction. choose a value in (0.0,1.0).  
+    - -b : batch size.  
+    - -p : print progress dot every how many batches.  
+    - -l : learning rate.  
+    - -k : eikonal loss term factor. if unspecified or zero, not eikonal loss will be used.  
+    - -w : weighted L1 loss shape width. if unspecified or zero, not weighted L1 loss will be used.  
+  * Example:  
     `$ cd ./src`  
     `$ python sdfTrainNetworkTL.py -a 68 -d 5 -n 20 -s 5 -g 4 -c test-run-sdf-tl -k 0.1 -w 0.1 >> log.txt &`  
-  More details:  
-    The loaded encoding network has to match the enconding part of the to-be-trained network. It can be  
+  * More details:  
+    - The loaded encoding network has to match the enconding part of the to-be-trained network. It can be  
       changed in the executable script from line 48 on.  
+    - The weighting function for the weighted L1 loss can be modified in the file _./src/SdfTrain.py_. It must be  
+      modified twice, for the training loss and for the test loss computations. Those modifications are made from  
+      line 65 on and from line 97 on, respectively. In the code there two different shapes implemented already,  
+      one with an exponential decay, and one with a cosine and exponential decay term.  
+    - The stencil half-width of the finite difference derivative calculations of the eikonal loss term is defined 
+      in _./src/parseArgs.py_ in line 79.
     
