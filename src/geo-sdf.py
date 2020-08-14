@@ -39,8 +39,8 @@ tol   = np.power(np.finfo(float).eps, 0.75)  # tolerance how far the points in t
                                              #  actual geomtry
 illu_mode     = False                        # will generate only one geometry for
                                              #  visualization purposes
-printSampling = False                        # print details on sampled primitive
-                                             #  primitive shapes
+print_sampling = False                       # print details on sampled primitive
+                                             #  shapes
 
 
 # ===== prepare data generation =====

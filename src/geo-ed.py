@@ -35,7 +35,7 @@ delta = 1e-3                                 # spacing length scale for point cl
 tol   = np.power(np.finfo(float).eps, 0.75)  # tolerance how far the points in the
                                              #  point cloud can be placed inside the
                                              #  actual geomtry
-printSampling = False                        # print details on sampled primitive
+print_sampling = False                       # print details on sampled primitive
                                              #  primitive shapes
 
 
@@ -57,7 +57,7 @@ n_shape[n_shape<=0] = 1
 np.random.seed(3210)
 t0 = time.time()
 t1 = time.time()
-
+print('  geo    >>  n_pts   n_in    >>  dt_geo   t_elaps   t_total  t_remain')
 for i_geo in range(n_geo):
     z = createSampleBinClass(x,y,Z[i_geo],L_ref,n_shape[i_geo])
     Z[i_geo] = z
@@ -67,8 +67,8 @@ for i_geo in range(n_geo):
     dtT = dt0*n_geo/(i_geo+1)
     dtF = (n_geo-i_geo-1)/(i_geo+1)*dt0
     t1  = t2
-    print('{:5.0f}\t>>  {:5.0f}  {:5.0f}\t>>  {:5.2f}  {:8.1f}  {:8.1f}  {:8.1f}'.format(
-        i_geo+1,z.size,np.sum(z==1),dt1,dt0,dtT,dtF))
+    print('{:5.0f}    >>  {:5.0f}  {:5.0f}    >>  {:6.2f}  {:8.1f}  {:8.1f}  {:8.1f}'.format(
+        i_geo+1,z.size,np.sum(z==1),dt1,dt0,dtT,dtF),flush=True)
 
 
 # ===== save training data =====
