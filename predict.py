@@ -12,7 +12,7 @@ X = torch.from_numpy(X)
 Y = np.load("data/Y_1obj.npy").reshape((-1, 1, resolution, resolution))
 Y = torch.from_numpy(Y)
 
-idx = 0
+idx = 5
 img = X[idx, :, :, :]
 img = img.unsqueeze(0)
 sdf = Y[idx, :, :, :]

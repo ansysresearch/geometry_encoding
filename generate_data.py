@@ -58,7 +58,7 @@ def combine_sdf(sdfs_one_object, n_combine, mode="union"):
         raise(NotImplementedError("only mode union is implemented."))
 
 
-n_one_obj, n_two_obj, n_three_obj, n_aug = 50, 1000, 2000, 3
+n_one_obj, n_two_obj, n_three_obj, n_aug = 500, 1000, 2000, 3
 grid_N = 200
 x, y = np.meshgrid(np.linspace(-1, 1, grid_N), np.linspace(-1, 1, grid_N))
 
@@ -78,12 +78,12 @@ sdfs_two_object = np.array([combine_sdf(sfds_one_object, 2) for _ in range(n_two
 sdfs_three_object = np.array([combine_sdf(sfds_one_object, 3) for _ in range(n_three_obj)])
 
 print("save data")
-np.save("X_1obj.npy", sfds_one_object < 0)
-np.save("Y_1obj.npy", sfds_one_object)
-np.save("X_2obj.npy", sdfs_two_object < 0)
-np.save("Y_2ojb.npy", sdfs_two_object)
-np.save("X_3obj.npy", sdfs_three_object < 0)
-np.save("Y_3ojb.npy", sdfs_three_object)
+np.save("data/X_1obj.npy", sfds_one_object < 0)
+np.save("data/Y_1obj.npy", sfds_one_object)
+np.save("data/X_2obj.npy", sdfs_two_object < 0)
+np.save("data/Y_2ojb.npy", sdfs_two_object)
+np.save("data/X_3obj.npy", sdfs_three_object < 0)
+np.save("data/Y_3ojb.npy", sdfs_three_object)
 
 plot_data = True # turn true for plotting
 if plot_data:
