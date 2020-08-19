@@ -89,7 +89,3 @@ def generate_data(img_resolution=200, n_obj=500, augment=True, save_name=None, p
     if plot:
         for idx in np.random.randint(0, sdf.shape[0], 10):
             plot_sdf(sdf[idx, :, :] < 0, sdf[idx, :, :])
-
-
-
-generate_data(obj_list=("Circle",), n_obj=1500, augment=False, save_name="circles", plot=True)
