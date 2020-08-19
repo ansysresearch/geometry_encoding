@@ -2,7 +2,7 @@ import tqdm
 from data.geoms import *
 
 
-def generate_geoms(obj_list=("Circle", "Rectangle", "Diamond", "Cross", "nGon"), xmax=0.8, ymax=0.8):
+def generate_geoms(obj_list, xmax=0.8, ymax=0.8):
     obj_id = np.random.choice(obj_list)
     #print(obj_id)
     if obj_id == "Circle":
@@ -50,54 +50,46 @@ def augment_geom(geom, mode="all"):
     else:
         raise(ValueError("Mode %s is not recognized"%mode))
 
+
 def combine_sdf(sdfs_one_object, n_combine, mode="union"):
-    idx = np.random.randint(0, sdfs_one_object.shape[0], n_combine)
+    sdf_random_list = np.random.choice(sdfs_one_object, n_combine)
     if mode == "union":
-        return np.min(sdfs_one_object[idx], axis=0)
+        return np.min(sdf_random_list, axis=0)
     else:
         raise(NotImplementedError("only mode union is implemented."))
 
 
-n_one_obj, n_two_obj, n_three_obj, n_aug = 500, 1000, 2000, 3
-grid_N = 200
-x, y = np.meshgrid(np.linspace(-1, 1, grid_N), np.linspace(-1, 1, grid_N))
+def generate_data(img_resolution=200, n_obj=500, augment=True, save_name=None, plot=False,
+                  obj_list=("Circle", "Rectangle", "Diamond", "Cross", "nGon")):
+    x, y = np.meshgrid(np.linspace(-1, 1, img_resolution), np.linspace(-1, 1, img_resolution))
+    print("generating objects")
+    geoms = []
+    for _ in tqdm.tqdm(range(n_obj)):
+        geoms.append(generate_geoms(obj_list))
 
-print("generating objects")
-geoms = []
-for _ in tqdm.tqdm(range(n_one_obj)):
-    geoms.append(generate_geoms())
+    print("augmenting with rotation, translation and scaling")
+    geoms_aug = []
+    for _ in range(3):
+        geoms_aug += [augment_geom(augment_geom(g, mode="translate")) for g in geoms]
 
-print("augmenting with rotation, translation and scaling")
-geoms_aug = []
-for _ in range(n_aug):
-    geoms_aug += [augment_geom(augment_geom(g, mode="translate")) for g in geoms]
+    sdf = [g.eval_sdf(x, y) for g in geoms_aug]
+    if augment:
+        n_two_obj = n_obj * 2
+        n_three_obj = n_obj * 3
+        print("augment with merging")
+        sdf += [combine_sdf(sdf, 2) for _ in range(n_two_obj)] + [combine_sdf(sdf, 3) for _ in range(n_three_obj)]
 
-print("augment with merging")
-sfds_one_object = np.array([g.eval_sdf(x, y) for g in geoms_aug])
-sdfs_two_object = np.array([combine_sdf(sfds_one_object, 2) for _ in range(n_two_obj)])
-sdfs_three_object = np.array([combine_sdf(sfds_one_object, 3) for _ in range(n_three_obj)])
+    sdf = np.array(sdf)
 
-print("save data")
-np.save("data/X_1obj.npy", sfds_one_object < 0)
-np.save("data/Y_1obj.npy", sfds_one_object)
-np.save("data/X_2obj.npy", sdfs_two_object < 0)
-np.save("data/Y_2ojb.npy", sdfs_two_object)
-np.save("data/X_3obj.npy", sdfs_three_object < 0)
-np.save("data/Y_3ojb.npy", sdfs_three_object)
+    if save_name:
+        print("save data")
+        np.save("datasets/X_" + save_name +".npy", sdf < 0)
+        np.save("datasets/Y_" + save_name +".npy", sdf)
 
-plot_data = True # turn true for plotting
-if plot_data:
-    for i in np.random.randint(0, n_one_obj, 10):
-        sdf = sfds_one_object[i, :, :]
-        img = sdf < 0
-        plot_sdf(img, sdf, plot_eikonal=True)
+    if plot:
+        for idx in np.random.randint(0, sdf.shape[0], 10):
+            plot_sdf(sdf[idx, :, :] < 0, sdf[idx, :, :])
 
-    for i in np.random.randint(0, n_two_obj, 10):
-        sdf = sdfs_two_object[i, :, :]
-        img = sdf < 0
-        plot_sdf(img, sdf, plot_eikonal=True)
 
-    for i in np.random.randint(0, n_three_obj, 10):
-        sdf = sdfs_three_object[i, :, :]
-        img = sdf < 0
-        plot_sdf(img, sdf, plot_eikonal=True)
+
+generate_data(obj_list=("Circle",), n_obj=1500, augment=False, save_name="circles", plot=True)

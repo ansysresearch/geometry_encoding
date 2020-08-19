@@ -7,9 +7,9 @@ resolution = 200
 net = UNet(n_channels=1, n_classes=1, bilinear=True)
 net.load_state_dict(torch.load("checkpoints/CP_epoch100.pth", map_location=torch.device('cpu')))
 net.eval()
-X = np.load("data/X_1obj.npy").astype(float).reshape((-1, 1, resolution, resolution))
+X = np.load("data/datasets/X_1obj.npy").astype(float).reshape((-1, 1, resolution, resolution))
 X = torch.from_numpy(X)
-Y = np.load("data/Y_1obj.npy").reshape((-1, 1, resolution, resolution))
+Y = np.load("data/datasets/Y_1obj.npy").reshape((-1, 1, resolution, resolution))
 Y = torch.from_numpy(Y)
 
 idx = 5
