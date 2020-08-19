@@ -61,6 +61,8 @@ def combine_sdf(sdfs_one_object, n_combine, mode="union"):
 
 def generate_data(img_resolution=200, n_obj=500, augment=True, save_name=None, plot=False,
                   obj_list=("Circle", "Rectangle", "Diamond", "Cross", "nGon")):
+    import os
+    print(os.getcwd())
     x, y = np.meshgrid(np.linspace(-1, 1, img_resolution), np.linspace(-1, 1, img_resolution))
     print("generating objects")
     geoms = []
@@ -83,8 +85,8 @@ def generate_data(img_resolution=200, n_obj=500, augment=True, save_name=None, p
 
     if save_name:
         print("save data")
-        np.save("datasets/X_" + save_name +".npy", sdf < 0)
-        np.save("datasets/Y_" + save_name +".npy", sdf)
+        np.save("data/datasets/X_" + save_name + ".npy", sdf < 0)
+        np.save("data/datasets/Y_" + save_name + ".npy", sdf)
 
     if plot:
         for idx in np.random.randint(0, sdf.shape[0], 10):
