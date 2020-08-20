@@ -52,7 +52,8 @@ def augment_geom(geom, mode="all"):
 
 
 def combine_sdf(sdfs_one_object, n_combine, mode="union"):
-    sdf_random_list = np.random.choice(sdfs_one_object, n_combine)
+    sdf_random_idx = np.random.randint(0, len(sdfs_one_object), n_combine)
+    sdf_random_list = [sdfs_one_object[idx] for idx in sdf_random_idx]
     if mode == "union":
         return np.min(sdf_random_list, axis=0)
     else:

@@ -81,7 +81,7 @@ class OutConv(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, n_channels, n_classes, convs, downs, ups, padding=1, bilinear=True):
+    def __init__(self, n_channels, n_classes, padding=1, bilinear=True):
         super().__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
@@ -112,6 +112,32 @@ class UNet(nn.Module):
         x = self.outc(x)
         return x
 
+
+class UNetSmall(nn.Module):
+    def __init__(self, n_channels, n_classes, padding=1, bilinear=True):
+        super().__init__()
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+        self.bilinear = bilinear
+
+        self.inc = DoubleConv(n_channels, 64, padding=padding)
+        self.down1 = Down(64, 128, padding=padding)
+        self.down2 = Down(128, 256, padding=padding)
+        factor = 2 if bilinear else 1
+        self.up1 = Up(256, 256 // factor, bilinear=bilinear, padding=padding)
+        self.up2 = Up(256, 128 // factor, bilinear=bilinear, padding=padding)
+        self.outc = OutConv(64, n_classes)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x = self.up1(x3, x2)
+        x = self.up2(x, x1)
+        x = self.outc(x)
+        return x
+
+
 class Net(nn.Module):
     def __init__(self, n_channels, n_classes, padding=1, bilinear=True):
         super().__init__()
@@ -139,4 +165,6 @@ def get_network(network_id):
     if network_id == 1:
         return UNet(n_channels=1, n_classes=1, bilinear=True, padding=1)
     elif network_id == 2:
+        return UNetSmall(n_channels=1, n_classes=1, bilinear=True, padding=1)
+    elif network_id == 3:
         return Net(n_channels=1, n_classes=1, bilinear=True, padding=1)

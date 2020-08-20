@@ -16,7 +16,7 @@ training_parser.add_argument("-s",  "--save-name",  type=str, help="save name", 
 training_parser.add_argument("-d",  "--dataset-id", type=str, help="dataset id",       default="1")
 training_parser.add_argument("-ne", "--num-epochs", type=int, help="number of epochs", default=100)
 training_parser.add_argument("-se", "--save-every", type=int, help="save every",       default=10)
-training_parser.add_argument("-b",  "--batch-size", type=int, help="batch size",       default=250)
+training_parser.add_argument("-b",  "--batch-size", type=int, help="batch size",       default=50)
 training_parser.add_argument("-vf", "--val-frac",   type=float, help="validation fraction", default=0.1)
 training_parser.add_argument("-lr", "--learning-rate", type=float, help="learning rate", default=0.01)
 training_args = training_parser.parse_args()
