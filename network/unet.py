@@ -50,11 +50,13 @@ class Up(nn.Module):
             self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
             self.conv = DoubleConv(in_channels, out_channels, mid_channels=in_channels // 2, kernel_size=kernel_size, padding=padding)
         else:
-            self.up = nn.ConvTranspose2d(in_channels , in_channels // 2, kernel_size=kernel_size, stride=2)
+            self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=kernel_size, stride=2)
             self.conv = DoubleConv(in_channels, out_channels)
 
+    def forward(self, x1, x2=None):
+        if x2 is None:
+            return self.conv(x1)
 
-    def forward(self, x1, x2):
         x1 = self.up(x1)
         # input is CHW
         diffY = x2.size()[2] - x1.size()[2]
@@ -78,10 +80,9 @@ class OutConv(nn.Module):
         return self.conv(x)
 
 
-
 class UNet(nn.Module):
-    def __init__(self, n_channels, n_classes, padding=1, bilinear=True):
-        super(UNet, self).__init__()
+    def __init__(self, n_channels, n_classes, convs, downs, ups, padding=1, bilinear=True):
+        super().__init__()
         self.n_channels = n_channels
         self.n_classes = n_classes
         self.bilinear = bilinear
@@ -108,9 +109,34 @@ class UNet(nn.Module):
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         x = self.up4(x, x1)
-        logits = self.outc(x)
-        return logits
+        x = self.outc(x)
+        return x
+
+class Net(nn.Module):
+    def __init__(self, n_channels, n_classes, padding=1, bilinear=True):
+        super().__init__()
+        self.n_channels = n_channels
+        self.n_classes = n_classes
+        self.bilinear = bilinear
+        self.inc1 = DoubleConv(n_channels, 32, padding=padding)
+        self.inc2 = DoubleConv(32, 64, padding=padding)
+        self.inc3 = DoubleConv(64, 128, padding=padding)
+        self.inc4 = DoubleConv(128, 64, padding=padding)
+        self.inc5 = DoubleConv(64, 32, padding=padding)
+        self.outc = OutConv(32, n_classes)
+
+    def forward(self, x):
+        x1 = self.inc1(x)
+        x3 = self.inc2(x1)
+        x4 = self.inc3(x3)
+        x5 = self.inc4(x4)
+        x6 = self.inc5(x5)
+        x7 = self.outc(x6)
+        return x7
 
 
 def get_network(network_id):
-    return UNet(n_channels=1, n_classes=1, bilinear=True, padding=network_id)
+    if network_id == 1:
+        return UNet(n_channels=1, n_classes=1, bilinear=True, padding=1)
+    elif network_id == 2:
+        return Net(n_channels=1, n_classes=1, bilinear=True, padding=1)
