@@ -12,10 +12,10 @@ class DoubleConv(nn.Module):
         super().__init__()
         self.double_conv = nn.Sequential(
             nn.Conv2d(in_channels, mid_channels, 3, padding=1),
-            nn.BatchNorm2d(mid_channels),
+            #nn.BatchNorm2d(mid_channels),
             nn.ReLU(inplace=True),
             nn.Conv2d(mid_channels, out_channels, 3, padding=1),
-            nn.BatchNorm2d(out_channels),
+            #nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
 
@@ -176,7 +176,7 @@ class Net(nn.Module):
 
 
 def get_network(network_id):
-    if network_id == 1:
+    if network_id == "UNet":
         return UNet(n_channels=1, n_classes=1)
     elif network_id == 2:
         return UNetFC(n_channels=1)

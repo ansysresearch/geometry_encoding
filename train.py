@@ -8,28 +8,16 @@ from torch.utils.data import TensorDataset, DataLoader, random_split
 from network import get_network
 import argparse
 
-# training arg parser
-default_name = time.ctime().replace(" ", "_").replace(":", "")
-training_parser = argparse.ArgumentParser()
-training_parser.add_argument("-nw", "--network-id", type=int, help="network id",       default=1)
-training_parser.add_argument("-s",  "--save-name",  type=str, help="save name",        default=default_name)
-training_parser.add_argument("-d",  "--dataset-id", type=str, help="dataset id",       default="1")
-training_parser.add_argument("-ne", "--num-epochs", type=int, help="number of epochs", default=100)
-training_parser.add_argument("-se", "--save-every", type=int, help="save every",       default=10)
-training_parser.add_argument("-b",  "--batch-size", type=int, help="batch size",       default=50)
-training_parser.add_argument("-vf", "--val-frac",   type=float, help="validation fraction", default=0.1)
-training_parser.add_argument("-lr", "--learning-rate", type=float, help="learning rate", default=0.01)
-training_args = training_parser.parse_args()
-
-## parsing input parameters
-network_id     = training_args.network_id
-save_name      = training_args.save_name
-dataset_id     = training_args.dataset_id
-num_epochs     = training_args.num_epochs
-save_every     = training_args.save_every
-batch_size     = training_args.batch_size
-lr             = training_args.learning_rate
-val_frac       = training_args.val_frac
+network_id = "UNet"
+save_name  = "circle100"
+dataset_id = "circle100"
+num_epochs = 100
+save_every = 20
+batch_size = 50
+lr         = 0.001
+val_frac   = 0.2
+scheduler_patience = 3
+scheduler_min_lr = 5e-6
 checkpoint_dir = "checkpoints/"
 
 # read data
@@ -51,25 +39,34 @@ val_loader = DataLoader(val, batch_size=1, shuffle=False, num_workers=0, pin_mem
 
 # read network and setup optimizer, loss
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-net = get_network(network_id).to(device=device) # UNet(n_channels=1, n_classes=1, bilinear=True).to(device=device)
-#optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
+net = get_network(network_id).to(device=device)
 optimizer = optim.Adam(net.parameters(), lr=lr)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, verbose=True)
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=scheduler_patience, verbose=True, min_lr=scheduler_min_lr)
+# scheduler = optim.lr_scheduler.StepLR(optimizer, gamma=0.25, step_size=10)
 loss_fn = nn.L1Loss()
 
+
+# custom loss function
 def custom_loss_fn(y_pred, y_true, mask):
     l1_loss = nn.L1Loss(reduction='none')
-    loss = l1_loss(y_pred, y_true)
-    return torch.mean(loss * mask)
+    loss_pre_mask = l1_loss(y_pred, y_true)
+    return torch.mean(loss_pre_mask * mask)
 
 
-loss_mask = torch.zeros((img_resolution, img_resolution))
-loss_mask[img_resolution-2:, :] = 1
-loss_mask[:2, :] = 1
-loss_mask[:, img_resolution-2:] = 1
-loss_mask[:, :2] = 1
-loss_mask *= 5
-loss_mask += 1
+# loss_mask = torch.zeros((img_resolution, img_resolution))
+# loss_mask[img_resolution-2:, :] = 1
+# loss_mask[:2, :] = 1
+# loss_mask[:, img_resolution-2:] = 1
+# loss_mask[:, :2] = 1
+# loss_mask *= 5
+# loss_mask += 1
+# x_ = np.linspace(-img_resolution//2, img_resolution//2, img_resolution) / (img_resolution//2)
+# X_, Y_ = np.meshgrid(x_, x_)
+# Z_ = np.maximum(abs(X_), abs(Y_))
+# Z_ *= 3
+# Z_ += 1
+# loss_mask = torch.from_numpy(Z_)
+loss_mask = torch.ones((img_resolution, img_resolution))
 loss_mask = loss_mask.to(device=device)
 
 #print(net.num_paras())
@@ -82,12 +79,12 @@ for epoch in range(num_epochs):
         xb = xb.to(device=device, dtype=torch.float32)
         yb = yb.to(device=device, dtype=torch.float32)
         pred = net(xb)
-        #loss = loss_fn(pred, yb)
-        loss = custom_loss_fn(pred, yb, loss_mask)
+        loss = loss_fn(pred, yb)
+        #loss = custom_loss_fn(pred, yb, loss_mask)
         epoch_loss += loss.item()
         optimizer.zero_grad()
         loss.backward()
-        nn.utils.clip_grad_value_(net.parameters(), 0.1)
+        #nn.utils.clip_grad_value_(net.parameters(), 0.1)
         optimizer.step()
 
     print(f"training loss= {epoch_loss/len(train_loader)},  ", end="")
@@ -97,8 +94,8 @@ for epoch in range(num_epochs):
         xbv = xbv.to(device=device, dtype=torch.float32)
         ybv = ybv.to(device=device, dtype=torch.float32)
         predv = net(xbv)
-        lossv = custom_loss_fn(predv, ybv, loss_mask)
-        #lossv = loss_fn(predv, ybv)
+        #lossv = custom_loss_fn(predv, ybv, loss_mask)
+        lossv = loss_fn(predv, ybv)
         epoch_lossv += lossv.item()
 
     scheduler.step(epoch_lossv)

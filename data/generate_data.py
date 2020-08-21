@@ -60,7 +60,7 @@ def combine_sdf(sdfs_one_object, n_combine, mode="union"):
         raise(NotImplementedError("only mode union is implemented."))
 
 
-def generate_data(img_resolution=200, n_obj=500, augment=True, save_name=None, plot=False,
+def generate_data_on_grid(img_resolution=200, n_obj=500, augment=True, save_name=None, plot=False,
                   obj_list=("Circle", "Rectangle", "Diamond", "Cross", "nGon")):
     import os
     print(os.getcwd())
