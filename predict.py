@@ -22,6 +22,7 @@ def plot_data():
 
         plt.subplot(3, 2, 3)
         plt.imshow(sdf, cmap='hot')
+        plt.colorbar()
         plt.contour(sdf, 10, colors='k')
         plt.gca().invert_yaxis()
         plt.xticks([])
@@ -32,6 +33,7 @@ def plot_data():
 
         plt.subplot(3, 2, 4)
         plt.imshow(sdf_pred, cmap='hot')
+        plt.colorbar()
         plt.contour(sdf_pred, 10, colors='k')
         plt.gca().invert_yaxis()
         plt.xticks([])
@@ -94,8 +96,8 @@ else:
         sdf = sdf.squeeze()
         sdf_pred = sdf_pred.squeeze()
 
-        saved_list.append((sdf.numpy(), sdf_pred.numpy()))
-
+        saved_list.append((sdf.numpy().copy(), sdf_pred.numpy().copy()))
+        
     np.save("checkpoints/test_predictions.npy", np.array(saved_list))
     if plot_arg == 1:
         plot_data()

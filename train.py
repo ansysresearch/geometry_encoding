@@ -52,10 +52,27 @@ val_loader = DataLoader(val, batch_size=1, shuffle=False, num_workers=0, pin_mem
 # read network and setup optimizer, loss
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 net = get_network(network_id).to(device=device) # UNet(n_channels=1, n_classes=1, bilinear=True).to(device=device)
-optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
+#optimizer = optim.RMSprop(net.parameters(), lr=lr, weight_decay=1e-8, momentum=0.9)
+optimizer = optim.Adam(net.parameters(), lr=lr)
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=3, verbose=True)
 loss_fn = nn.L1Loss()
 
+def custom_loss_fn(y_pred, y_true, mask):
+    l1_loss = nn.L1Loss(reduction='none')
+    loss = l1_loss(y_pred, y_true)
+    return torch.mean(loss * mask)
+
+
+loss_mask = torch.zeros((img_resolution, img_resolution))
+loss_mask[img_resolution-2:, :] = 1
+loss_mask[:2, :] = 1
+loss_mask[:, img_resolution-2:] = 1
+loss_mask[:, :2] = 1
+loss_mask *= 5
+loss_mask += 1
+loss_mask = loss_mask.to(device=device)
+
+#print(net.num_paras())
 # train
 for epoch in range(num_epochs):
     print(f"epoch {epoch},  ", end="")
@@ -65,7 +82,8 @@ for epoch in range(num_epochs):
         xb = xb.to(device=device, dtype=torch.float32)
         yb = yb.to(device=device, dtype=torch.float32)
         pred = net(xb)
-        loss = loss_fn(pred, yb)
+        #loss = loss_fn(pred, yb)
+        loss = custom_loss_fn(pred, yb, loss_mask)
         epoch_loss += loss.item()
         optimizer.zero_grad()
         loss.backward()
@@ -79,7 +97,8 @@ for epoch in range(num_epochs):
         xbv = xbv.to(device=device, dtype=torch.float32)
         ybv = ybv.to(device=device, dtype=torch.float32)
         predv = net(xbv)
-        lossv = loss_fn(predv, ybv)
+        lossv = custom_loss_fn(predv, ybv, loss_mask)
+        #lossv = loss_fn(predv, ybv)
         epoch_lossv += lossv.item()
 
     scheduler.step(epoch_lossv)
