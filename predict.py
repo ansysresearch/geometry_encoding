@@ -51,9 +51,10 @@ def plot_data():
 
         plt.show()
 
+
 network_id = "UNet"
-network_file = "circle100"
-data_name = "circle100"
+network_file = "circ50"
+data_name = "circ50"
 plot_arg = 1
 
 if plot_arg == 2:
@@ -63,15 +64,15 @@ else:
     net = get_network(network_id=network_id).to(device=device)
     net.load_state_dict(torch.load("checkpoints/" + network_file + ".pth"))
     net.eval()
-    X = np.load("data/datasets/X_" + data_name + ".npy").astype(float)
+    X = np.load("data/datasets/img_" + data_name + ".npy").astype(float)
     img_resolution = X.shape[-1]
     X = X.reshape((-1, 1, img_resolution, img_resolution))
     X = torch.from_numpy(X)
-    Y = np.load("data/datasets/Y_" + data_name + ".npy").reshape((-1, 1, img_resolution, img_resolution))
+    Y = np.load("data/datasets/sdf_" + data_name + ".npy").reshape((-1, 1, img_resolution, img_resolution))
     Y = torch.from_numpy(Y)
 
     saved_list = []
-    for idx in np.random.randint(0, X.shape[0], 5):
+    for idx in np.random.randint(0, X.shape[0], 10):
         img = X[idx, :, :, :]
         img = img.unsqueeze(0)
         sdf = Y[idx, :, :, :]
@@ -91,14 +92,14 @@ else:
     if plot_arg == 1:
         plot_data()
 
-    X_test = np.load("data/datasets/X_" + data_name + "-test.npy").astype(float)
+    X_test = np.load("data/datasets/img_" + data_name + "-test.npy").astype(float)
     X_test = X_test.reshape((-1, 1, img_resolution, img_resolution))
     X_test = torch.from_numpy(X_test)
-    Y_test = np.load("data/datasets/Y_" + data_name + "-test.npy").reshape((-1, 1, img_resolution, img_resolution))
+    Y_test = np.load("data/datasets/sdf_" + data_name + "-test.npy").reshape((-1, 1, img_resolution, img_resolution))
     Y_test = torch.from_numpy(Y_test)
 
     saved_list = []
-    for idx in np.random.randint(0, X_test.shape[0], 5):
+    for idx in np.random.randint(0, X_test.shape[0], 10):
         img = X_test[idx, :, :, :]
         img = img.unsqueeze(0)
         sdf = Y_test[idx, :, :, :]

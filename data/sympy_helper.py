@@ -43,7 +43,7 @@ SIMPY_2_NUMPY_DICT = {
                        'Heaviside': heaviside_func
                       }
 
-def plot_sdf(img, sdf, xticks=(-1, 1), yticks=(-1, 1), plot_eikonal=False):
+def plot_sdf(img, sdf, xticks=(-1, 1), yticks=(-1, 1), plot_eikonal=False, show=True):
     plt.figure(figsize=(10,10))
     plt.subplot(2, 2, 1)
     plt.imshow(img, cmap='binary')
@@ -71,4 +71,5 @@ def plot_sdf(img, sdf, xticks=(-1, 1), yticks=(-1, 1), plot_eikonal=False):
         plt.yticks(np.linspace(0, img.shape[1], 5), np.linspace(yticks[0], yticks[1], 5))
         plt.colorbar()
 
-    plt.show()
+    if show:
+        plt.show()

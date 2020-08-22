@@ -21,8 +21,8 @@ class Geom:
     Assumed 2D geometry for now.
     """
     def __init__(self, params, compute_sdf=True):
-        self.x = Symbol('x')
-        self.y = Symbol('y')
+        self.x = Symbol('x', real=True)
+        self.y = Symbol('y', real=True)
         self.params = params
         self.sdf = None
         if compute_sdf: self.compute_sdf()
@@ -41,8 +41,11 @@ class Geom:
     # x and y can be 2d numpy arrays.
     # for this to work properly, we need a dictionary that specifies mapping
     # from sympy functions to numpy functions.
+    def lambdified_sdf(self):
+        return lambdify([self.x, self.y], self.sdf, modules=SIMPY_2_NUMPY_DICT)
+
     def eval_sdf(self, x, y):
-        sdf_lambdify = lambdify([self.x, self.y], self.sdf, modules=SIMPY_2_NUMPY_DICT)
+        sdf_lambdify = self.lambdified_sdf()
         return sdf_lambdify(x, y)
 
     # plot binary and sdf images.
@@ -50,7 +53,6 @@ class Geom:
         sdf = self.eval_sdf(x, y)
         img = sdf < 0
         plot_sdf(img, sdf, xticks=xticks, yticks=yticks, plot_eikonal=plot_eikonal)
-
 
     # move in the direction of the vector t[0], t[1]
     def translate(self, t):
@@ -137,7 +139,6 @@ class CrossX(Geom):
         self.sdf = sympy_norm([x - 1/2 * d, y - 1/2 * d]) - r
 
 
-
 class nGon(Geom):
     """
     a shape with n sides.
@@ -199,6 +200,24 @@ class nGon(Geom):
         sgn1 = get_sign()
         self.sdf = f_min3(Array(d)) * (1 - 2 * sgn1)
 
+#
+# class CombinedGeom(Geom):
+#     # combine two geometries
+#     def __init__(self, params, method='union'):
+#         self.method = method
+#         super().__init__(params)
+#
+#     def __repr__(self):
+#         return "combined geometry"
+#
+#     def compute_sdf(self):
+#         if self.method == "union":
+#             self.sdf = Min(*[g.sdf for g in self.params])
+#         elif self.method == "intersection":
+#             self.sdf = Max(*[g.sdf for g in self.params])
+#         else:
+#             raise(NotImplementedError("This method is not implemented."))
+
 
 def merge_geoms(geoms, x, y):
     sdf_pnts_vec = [geom.eval_sdf(x, y) for geom in geoms]
@@ -225,8 +244,8 @@ if __name__ == "__main__":
              nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]).translate((0.4, 0.2)).rotate(0.5),
              nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]).translate((0.4, 0.2)).scale(0.4)
              ]
-    for g in geoms:
-        g.plot_sdf(x, y, plot_eikonal=True)
+    # for g in geoms:
+    #     g.plot_sdf(x, y, plot_eikonal=True)
 
 
     geom = Rectangle([0.2, 0.3])
