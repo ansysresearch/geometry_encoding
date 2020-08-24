@@ -62,7 +62,7 @@ def plot_sdf(img, sdf, xticks=(-1, 1), yticks=(-1, 1), plot_eikonal=False, show=
     if plot_eikonal:
         dx, dy = (xticks[1] - xticks[0]) / img.shape[0],  (yticks[1] - yticks[0]) / img.shape[1]
         sdf_gradient = np.gradient(sdf)
-        sdf_gradient_values = np.sqrt(sdf_gradient[0] ** 2 / dx ** 2+ sdf_gradient[1] ** 2 / dy ** 2)
+        sdf_gradient_values = np.sqrt(sdf_gradient[0] ** 2 / dx ** 2 + sdf_gradient[1] ** 2 / dy ** 2)
 
         plt.subplot(2, 2, 3)
         plt.imshow(sdf_gradient_values)

@@ -27,12 +27,13 @@ def generate_one_geometry(obj_list, xmax=0.8, ymax=0.8):
         rx = max(0.2, np.random.random() * xmax)
         ry = max(0.2, np.random.random() * ymax)
         geom = Diamond([rx, ry])
-    elif obj_id == "Cross":
+    elif obj_id == "CrossX":
         w = max(0.2, np.random.random() * xmax)
         r = max(0.2, np.random.random() * xmax*0.3)
         geom = CrossX([w, r])
     else:
-        raise("object %s is not yet implemented"%obj_id)
+        print(obj_id)
+        raise("object %s is not yet implemented" % obj_id)
     return geom
 
 
@@ -116,6 +117,17 @@ def sample_near_geometry(geoms, n_sample, lb=-0.1, ub=0.1):
     return sample_pnts[:, :n_sample]
 
 
+def filter_sdfs(sdf):
+    if np.mean(sdf < 0) > 0.75: #object is too big
+        return False
+    elif np.any(np.min(sdf < 0, axis=0)):  #object extends an entire row
+        return False
+    elif np.any(np.min(sdf < 0, axis=1)):  #object extends an entire column
+        return False
+    else:
+        return True
+
+
 def generate_data(obj_list, img_resolution=100, n_obj=500, save_name="data", plot=False, n_sample=500):
     x, y = np.meshgrid(np.linspace(-1, 1, img_resolution), np.linspace(-1, 1, img_resolution))
     geoms1 = generate_geometries(n_obj=n_obj, obj_list=obj_list)
@@ -123,27 +135,32 @@ def generate_data(obj_list, img_resolution=100, n_obj=500, save_name="data", plo
     geoms2, sdf2 = combine_geometries(geoms1, 2, 2*n_obj, x, y)
     geoms3, sdf3 = combine_geometries(geoms1, 3, 3*n_obj, x, y)
     sdf = np.array(sdf1 + sdf2 + sdf3)
+    geoms = np.array(geoms1 + geoms2 + geoms3, dtype=object)
+
+    mask = [filter_sdfs(s) for s in sdf]
+    sdf = sdf[mask, :, :]
+    geoms = geoms[mask]
 
     print("save sdf on grids")
     np.save("data/datasets/img_" + save_name + ".npy", sdf < 0)
     np.save("data/datasets/sdf_" + save_name + ".npy", sdf)
 
     print("sampling points on the boundary")
-    sample1 = [sample_near_geometry(geom, int(n_sample*0.2), lb=-0.01, ub=0.01) for geom in geoms1 + geoms2 + geoms3]
+    pnts1 = [sample_near_geometry(geom, int(n_sample*0.2), lb=-0.01, ub=0.01) for geom in geoms]
 
     print("sampling points near the boundary")
-    sample2 = [sample_near_geometry(geom, int(n_sample*0.2), lb=-0.1, ub=0.1) for geom in geoms1 + geoms2 + geoms3]
+    pnts2 = [sample_near_geometry(geom, int(n_sample*0.2), lb=-0.1, ub=0.1) for geom in geoms]
 
     print("sampling points anywhere else")
-    sample3 = [sample_near_geometry(geom, int(n_sample*0.6), lb=-2, ub=5) for geom in geoms1 + geoms2 + geoms3]
-    sample = np.concatenate([sample1, sample2, sample3], axis=2)
+    pnts3 = [sample_near_geometry(geom, int(n_sample*0.6), lb=-5, ub=5) for geom in geoms]
+    pnts = np.concatenate([pnts1, pnts2, pnts3], axis=2)
 
     print("save sampling points")
-    np.save("data/datasets/sample_" + save_name + ".npy", sdf)
+    np.save("data/datasets/pnt_" + save_name + ".npy", pnts)
 
     if plot:
         for idx in np.random.randint(0, sdf.shape[0], 50):
-            sd, sp = sdf[idx, :, :], sample[idx, :, :]
+            sd, sp = sdf[idx, :, :], pnts[idx, :, :]
             plot_sdf(sd, sd < 0, show=False)
             plt.plot((sp[0, :] + 1) * sd.shape[1]/2, (sp[1, :] + 1) * sd.shape[0]/2, 'g.')
             # plt.plot((sp[0, 400:] + 1) * sd.shape[1]/2, (sp[1, 400:] + 1) * sd.shape[0]/2, 'g.')

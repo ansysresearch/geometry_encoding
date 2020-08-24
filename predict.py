@@ -8,7 +8,7 @@ import argparse
 def plot_data():
     test_preds = np.load("checkpoints/test_predictions.npy")
     img_resolution = test_preds[0].shape[-1]
-    xx = np.linspace(0, img_resolution, img_resolution)
+    xx = np.linspace(0, img_resolution-1, img_resolution)
     sampling_lines = [img_resolution // 10, img_resolution // 2, int(img_resolution * 0.9)]
     clr_list = ['r', 'b', 'g']
     for sdf, sdf_pred in test_preds:
@@ -19,11 +19,14 @@ def plot_data():
         plt.gca().invert_yaxis()
         plt.xticks([])
         plt.yticks([])
-
+        levels = np.linspace(sdf.min() + 0.02, sdf.max() - 0.2, 5)
         plt.subplot(3, 2, 3)
         plt.imshow(sdf, cmap='hot')
-        plt.colorbar()
-        plt.contour(sdf, 10, colors='k')
+        #plt.colorbar()
+        cn = plt.contour(sdf, levels, colors='k')
+        plt.clabel(cn, fmt='%0.2f', colors='k', fontsize=10)  # contour line labels
+        plt.contour(sdf, [0], colors='k', linewidths=3)
+        #plt.clabel(cn0, fmt='%0.2f', colors='k')  # contour line labels
         plt.gca().invert_yaxis()
         plt.xticks([])
         plt.yticks([])
@@ -31,28 +34,30 @@ def plot_data():
             plt.plot(xx, [xx[plt_idx]] * img_resolution, clr + '--')
             plt.plot([xx[plt_idx]] * img_resolution, xx, clr + '--')
 
-        plt.subplot(3, 2, 4)
+        plt.subplot(3, 2, 5)
         plt.imshow(sdf_pred, cmap='hot')
-        plt.colorbar()
-        plt.contour(sdf_pred, 10, colors='k')
+        #plt.colorbar()
+        cn = plt.contour(sdf_pred, levels, colors='k')
+        plt.clabel(cn, fmt='%0.2f', colors='k', fontsize=10)  # contour line labels
+        plt.contour(sdf_pred, [0], colors='k', linewidths=3)
         plt.gca().invert_yaxis()
         plt.xticks([])
         plt.yticks([])
 
-        plt.subplot(3, 2, 5)
+        plt.subplot(2,2,2)
         for plt_idx, clr in zip(sampling_lines, clr_list):
             plt.plot(xx, sdf[plt_idx, :], clr + '--')
             plt.plot(xx, sdf_pred[plt_idx, :], clr + '-')
 
-        plt.subplot(3, 2, 6)
+        plt.subplot(2,2,4)
         for plt_idx, clr in zip(sampling_lines, clr_list):
             plt.plot(sdf[:, plt_idx], xx, clr + '--')
             plt.plot(sdf_pred[:, plt_idx], xx, clr + '-')
 
         plt.show()
 
-
-network_id = "UNet"
+#
+network_id = "UNet3"
 network_file = "circ50"
 data_name = "circ50"
 plot_arg = 1

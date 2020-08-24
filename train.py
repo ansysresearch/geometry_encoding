@@ -8,9 +8,9 @@ from torch.utils.tensorboard import SummaryWriter
 from network import get_network
 import argparse
 
-network_id = "UNet"
-save_name  = "circ50"
-dataset_id = "circ50"
+network_id = "UNet3"
+save_name  = "circle50"
+dataset_id = "circle50"
 num_epochs = 100
 save_every = 20
 batch_size = 50
@@ -18,6 +18,7 @@ lr         = 0.001
 val_frac   = 0.2
 scheduler_patience = 3
 scheduler_min_lr = 5e-6
+scheduler_factor = 0.2
 checkpoint_dir = "checkpoints/"
 
 # read data
@@ -41,65 +42,42 @@ val_loader = DataLoader(val, batch_size=1, shuffle=False, num_workers=0, pin_mem
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 net = get_network(network_id).to(device=device)
 optimizer = optim.Adam(net.parameters(), lr=lr)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=scheduler_patience, verbose=True, min_lr=scheduler_min_lr)
-
-
-# custom loss function
-def custom_loss_fn(y_pred, y_true):
-    l1_val = nn.L1Loss()(y_pred, y_true)
-    out_pred = (y_pred > 0).type(torch.float64)
-    #out_pred.requires_grad = True
-    out = (y_pred > 0).type(torch.float64)
-    ce_val = nn.BCELoss()(out_pred, out)
-    return l1_val, ce_val
-
-
-loss_fn = custom_loss_fn
-writer = SummaryWriter()
-gamma = 1e4
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=scheduler_patience, factor=scheduler_factor,
+                                                 verbose=True, min_lr=scheduler_min_lr)
+loss_fn = nn.L1Loss()
+writer = SummaryWriter("runs/sin")
 # train
 for epoch in range(num_epochs):
     print(f"epoch {epoch},  ", end="")
     net.train()
-    epoch_loss, epoch_l1_loss, epoch_bce_loss = 0, 0, 0
+    epoch_loss = 0
     for xb, yb in train_loader:
         xb = xb.to(device=device, dtype=torch.float32)
         yb = yb.to(device=device, dtype=torch.float32)
         optimizer.zero_grad()
         pred = net(xb)
-        l1_loss, bce_loss = loss_fn(pred, yb)
-        loss = l1_loss + gamma * bce_loss
-        epoch_l1_loss += l1_loss.item()
-        epoch_bce_loss += bce_loss.item()
+        loss = loss_fn(pred, yb)
         epoch_loss += loss.item()
         loss.backward()
         #nn.utils.clip_grad_value_(net.parameters(), 0.1)
         optimizer.step()
-    epoch_l1_loss  /= len(train_loader)
-    epoch_bce_loss /= len(train_loader)
-    epoch_loss     /= len(train_loader)
+    epoch_loss /= len(train_loader)
 
-    print("training: l1_loss=%0.4f, bce_loss=%0.4f, loss=%0.4f,  " % (epoch_l1_loss, epoch_bce_loss, epoch_loss), end="")
+    print("training loss=%0.4f,  " % epoch_loss, end="")
     writer.add_scalar("Loss/train", epoch_loss, epoch)
 
-    epoch_lossv, epoch_l1_lossv, epoch_bce_lossv = 0, 0, 0
+    epoch_lossv = 0
     for xbv, ybv in val_loader:
         xbv = xbv.to(device=device, dtype=torch.float32)
         ybv = ybv.to(device=device, dtype=torch.float32)
         predv = net(xbv)
-
-        l1_lossv, bce_lossv = loss_fn(predv, ybv)
-        lossv = l1_lossv + gamma * bce_lossv
-        epoch_l1_lossv += l1_lossv.item()
-        epoch_bce_lossv += bce_lossv.item()
+        lossv = loss_fn(predv, ybv)
         epoch_lossv += lossv.item()
 
-    scheduler.step(epoch_lossv)
-    epoch_l1_lossv /= len(val_loader)
-    epoch_bce_lossv /= len(val_loader)
     epoch_lossv /= len(val_loader)
+    scheduler.step(epoch_lossv)
 
-    print("validation: l1_loss=%0.4f, bce_loss=%0.4f, loss=%0.4f,  " % (epoch_l1_lossv, epoch_bce_lossv, epoch_lossv))
+    print("validation loss=%0.4f,  " % epoch_lossv)
     writer.add_scalar("Loss/valid", epoch_lossv, epoch)
 
     if epoch % save_every == save_every - 1:
