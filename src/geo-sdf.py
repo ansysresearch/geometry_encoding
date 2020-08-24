@@ -1,46 +1,6 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.tri as tri
-
 import time
-import statistics as stat
-
-exec(open("ShapeGeneration.py").read())
-
-np.random.seed(1)
-
-
-# ===== parameter to be set by user =====
-
-n_geo    = 4000     # number of different geometries
-n_samp   =   50     # number of sample locations per geometry (and per epoch of new data)
-n_ep_dat =   50     # number of epochs with new data
-
-n_shape_mu    = 3   # expected number of sampled shapes
-n_shape_sigma = 1   # standard deviation of number of sampled shapes
-
-L_ref       =  0.5  # reference size for sampled shapes
-minTriAngle = 15    # minimum inside angle of triangle
-
-n_res_x = 64        # x resolution of binary geometry image
-n_res_y = 64        # y resolution of binary geometry image
-
-datasetID = 1       # for name of data set, and to specify the data set during the network
-                    #  training process
-
-
-# ===== other parameters that one could play with =====
-
-delta = 1e-3                                 # spacing length scale for point cloud
-                                             #  defining geometry surface. used
-                                             #  during the generation of the dataset
-tol   = np.power(np.finfo(float).eps, 0.75)  # tolerance how far the points in the
-                                             #  point cloud can be placed inside the
-                                             #  actual geomtry
-illu_mode     = False                        # will generate only one geometry for
-                                             #  visualization purposes
-print_sampling = False                       # print details on sampled primitive
-                                             #  shapes
+from tqdm import tqdm
+from src.ShapeGeneration import *
 
 
 # ===== prepare data generation =====
@@ -93,8 +53,8 @@ for i_geo in range(n_geo):
 # ===== save training data =====
 
 if not illu_mode:
-    np.save('../data/train-data/{:02.0f}_indi'.format(datasetID),Z  ,allow_pickle=False)
-    np.save('../data/train-data/{:02.0f}_sdfc'.format(datasetID),SDF,allow_pickle=False)
+    np.save('../data/jans-data/{:02.0f}_indi'.format(datasetID),Z  ,allow_pickle=False)
+    np.save('../data/jans-data/{:02.0f}_sdfc'.format(datasetID),SDF,allow_pickle=False)
 
 
 # ===== make a plot =====

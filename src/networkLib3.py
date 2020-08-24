@@ -1,3 +1,7 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 dtype1 = torch.DoubleTensor
 dtype2 = torch.float64
 

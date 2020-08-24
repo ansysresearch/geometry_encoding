@@ -1,4 +1,40 @@
-# functions used fo shape generation
+import numpy as np
+import matplotlib.pyplot as plt
+
+np.random.seed(1)
+# ===== parameter to be set by user =====
+
+n_geo    = 500     # number of different geometries
+n_samp   =   50     # number of sample locations per geometry (and per epoch of new data)
+n_ep_dat =   50     # number of epochs with new data
+
+n_shape_mu    = 3   # expected number of sampled shapes
+n_shape_sigma = 1   # standard deviation of number of sampled shapes
+
+L_ref       =  0.5  # reference size for sampled shapes
+minTriAngle = 15    # minimum inside angle of triangle
+
+n_res_x = 64        # x resolution of binary geometry image
+n_res_y = 64        # y resolution of binary geometry image
+
+datasetID = 1       # for name of data set, and to specify the data set during the network
+                    #  training process
+
+
+# ===== other parameters that one could play with =====
+
+delta = 1e-3                                 # spacing length scale for point cloud
+                                             #  defining geometry surface. used
+                                             #  during the generation of the dataset
+tol   = np.power(np.finfo(float).eps, 0.75)  # tolerance how far the points in the
+                                             #  point cloud can be placed inside the
+                                             #  actual geomtry
+illu_mode     = False                        # will generate only one geometry for
+                                             #  visualization purposes
+print_sampling = False                       # print details on sampled primitive
+                                             #  shapes
+
+
 
 
 # intersectionYes = checkIntersection(i,j,xy_,order_)
@@ -676,29 +712,34 @@ def createSampleIllu(x,y,z,L_ref,n_shape,n_samp,n_ep_dat,x_illu,y_illu):
         i_rand = np.random.randint(4)
         l = max(0.1*l_ref,np.random.normal(l_ref,0.2*l_ref))
 
-        if i_rand==0:    # circle
-            shapeParams, zi, surfacePts = sampleCircle(x,y,l,print_sampling)
-            shapeList.append(shapeParams)
-            z[zi==1.0] = 1.0
-            surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
+        shapeParams, zi, surfacePts = sampleCircle(x, y, l, print_sampling)
+        shapeList.append(shapeParams)
+        z[zi==1.0] = 1.0
+        surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
 
-        elif i_rand==1:  # rectangle
-            shapeParams, zi, surfacePts = sampleRectangle(x,y,l,print_sampling)
-            shapeList.append(shapeParams)
-            z[zi==0.0] = 1.0
-            surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
-
-        elif i_rand==2:  # triangle
-            shapeParams, zi, surfacePts = sampleTriangle(x,y,l,print_sampling)
-            shapeList.append(shapeParams)
-            z[zi==0.0] = 1.0
-            surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
-
-        elif i_rand==3:  # polygon
-            shapeParams, zi, surfacePts = sampleBSpline(x,y,l,print_sampling)
-            shapeList.append(shapeParams)
-            z[zi==1.0] = 1.0
-            surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
+        # if i_rand==0:    # circle
+        #     shapeParams, zi, surfacePts = sampleCircle(x,y,l, print_sampling)
+        #     shapeList.append(shapeParams)
+        #     z[zi==1.0] = 1.0
+        #     surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
+        #
+        # elif i_rand==1:  # rectangle
+        #     shapeParams, zi, surfacePts = sampleRectangle(x,y,l,print_sampling)
+        #     shapeList.append(shapeParams)
+        #     z[zi==0.0] = 1.0
+        #     surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
+        #
+        # elif i_rand==2:  # triangle
+        #     shapeParams, zi, surfacePts = sampleTriangle(x,y,l,print_sampling)
+        #     shapeList.append(shapeParams)
+        #     z[zi==0.0] = 1.0
+        #     surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
+        #
+        # elif i_rand==3:  # polygon
+        #     shapeParams, zi, surfacePts = sampleBSpline(x,y,l,print_sampling)
+        #     shapeList.append(shapeParams)
+        #     z[zi==1.0] = 1.0
+        #     surfacePtsAll = np.concatenate((surfacePtsAll,surfacePts),axis=0)
 
     surfacePtsIn = np.logical_and.reduce(
         (surfacePtsAll[:,0]>=0, surfacePtsAll[:,0]<=1, surfacePtsAll[:,1]>=0, surfacePtsAll[:,1]<=1))
