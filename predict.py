@@ -6,7 +6,7 @@ import argparse
 
 
 def plot_data():
-    test_preds = np.load("checkpoints/test_predictions.npy")
+    test_preds = np.load("checkpoints/test_predictions_150.npy")
     img_resolution = test_preds[0].shape[-1]
     xx = np.linspace(0, img_resolution-1, img_resolution)
     sampling_lines = [img_resolution // 10, img_resolution // 2, int(img_resolution * 0.9)]
@@ -57,10 +57,10 @@ def plot_data():
         plt.show()
 
 #
-network_id = "UNet3"
-network_file = "circ50"
-data_name = "circ50"
-plot_arg = 1
+# network_id = "UNet3"
+# network_file = "circ50"
+# data_name = "circ50"
+plot_arg = 2
 
 if plot_arg == 2:
     plot_data()
