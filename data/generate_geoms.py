@@ -91,6 +91,7 @@ def combine_geometries(geoms, n1, n2, x, y):
 
 def sample_near_geometry(geoms, n_sample, lb=-0.1, ub=0.1):
     sample_pnts = []
+    if n_sample == 0: return sample_pnts
     while True:
         # generate two long random vectors,
         x = np.random.random(10000) * 2 - 1

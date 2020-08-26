@@ -1,16 +1,13 @@
-import os
-import numpy as np
-import torch
 import torch.nn as nn
 from torch import optim
-from torch.utils.data import TensorDataset, DataLoader, random_split
-from torch.utils.tensorboard import SummaryWriter
+from utils import *
 from network import get_network
-import argparse
+from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
-network_id = "UNet3"
-save_name  = "circle50"
-dataset_id = "circle50"
+network_id = "UNet"
+dataset_id = "all50"
+save_name  = network_id + "_" + dataset_id
 num_epochs = 100
 save_every = 20
 batch_size = 50
@@ -22,30 +19,27 @@ scheduler_factor = 0.2
 checkpoint_dir = "checkpoints/"
 
 # read data
-X = np.load("data/datasets/img_" + dataset_id + ".npy").astype(float)
-img_resolution = X.shape[-1]
-X = X.reshape((-1, 1, img_resolution, img_resolution))
-X = torch.from_numpy(X)
-Y = np.load("data/datasets/sdf_" + dataset_id + ".npy")
-Y = Y.reshape((-1, 1, img_resolution, img_resolution))
-Y = torch.from_numpy(Y)
-data_ds = TensorDataset(X, Y)
+train_ds, val_ds = read_data(dataset_id, val_frac=val_frac)
+train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
+val_loader = DataLoader(val_ds, batch_size=1, shuffle=False, num_workers=0, pin_memory=True, drop_last=True)
 
-# split to train and validation sets.
-n_val = int(len(data_ds) * val_frac)
-n_train = len(data_ds) - n_val
-train, val = random_split(data_ds, [n_train, n_val])
-train_loader = DataLoader(train, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
-val_loader = DataLoader(val, batch_size=1, shuffle=False, num_workers=0, pin_memory=True, drop_last=True)
 
-# read network and setup optimizer, loss
+# set cpu/gpu device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+if device == torch.device('cuda'):
+    gpu_id = find_best_gpu()
+    if gpu_id: torch.cuda.set_device(gpu_id)
+
+print("running simulation on " + device.type)
+# read network and setup optimizer, loss
 net = get_network(network_id).to(device=device)
 optimizer = optim.Adam(net.parameters(), lr=lr)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=scheduler_patience, factor=scheduler_factor,
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=scheduler_patience,
+                                                 factor=scheduler_factor,
                                                  verbose=True, min_lr=scheduler_min_lr)
 loss_fn = nn.L1Loss()
-writer = SummaryWriter("runs/sin")
+writer = SummaryWriter("runs/" + save_name)
+
 # train
 for epoch in range(num_epochs):
     print(f"epoch {epoch},  ", end="")
@@ -59,7 +53,6 @@ for epoch in range(num_epochs):
         loss = loss_fn(pred, yb)
         epoch_loss += loss.item()
         loss.backward()
-        #nn.utils.clip_grad_value_(net.parameters(), 0.1)
         optimizer.step()
     epoch_loss /= len(train_loader)
 
@@ -78,7 +71,7 @@ for epoch in range(num_epochs):
     scheduler.step(epoch_lossv)
 
     print("validation loss=%0.4f,  " % epoch_lossv)
-    writer.add_scalar("Loss/valid", epoch_lossv, epoch)
+    writer.add_scalar("Loss/val", epoch_lossv, epoch)
 
     if epoch % save_every == save_every - 1:
         if not os.path.exists(checkpoint_dir):
