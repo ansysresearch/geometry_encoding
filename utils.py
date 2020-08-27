@@ -31,7 +31,7 @@ def read_data(dataset_id, val_frac=0.1, end_suffix="", with_pnts=False):
     if with_pnts:
         # read pnt (irregular points) data
         pnts_file_name = "data/datasets/pnt_" + dataset_id + end_suffix + ".npy"
-        pnts = np.load(pnts_file_name)
+        pnts = np.load(pnts_file_name)[:, :, 400:]
         X_pnts = pnts[:, :2, :]
         X_pnts = torch.from_numpy(X_pnts)
         Y_pnts = pnts[:, 2, :]
