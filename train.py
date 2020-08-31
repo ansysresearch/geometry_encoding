@@ -21,8 +21,7 @@ checkpoint_dir = "checkpoints/"
 # read data
 train_ds, val_ds = read_data(dataset_id, val_frac=val_frac)
 train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
-val_loader = DataLoader(val_ds, batch_size=1, shuffle=False, num_workers=0, pin_memory=True, drop_last=True)
-
+val_loader = DataLoader(val_ds, batch_size=10, shuffle=False, num_workers=0, pin_memory=True, drop_last=True)
 
 # set cpu/gpu device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -30,7 +29,6 @@ if device == torch.device('cuda'):
     gpu_id = find_best_gpu()
     if gpu_id: torch.cuda.set_device(gpu_id)
 
-print("running simulation on " + device.type)
 # read network and setup optimizer, loss
 net = get_network(network_id).to(device=device)
 optimizer = optim.Adam(net.parameters(), lr=lr)
@@ -38,6 +36,12 @@ scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=scheduler_p
                                                  factor=scheduler_factor,
                                                  verbose=True, min_lr=scheduler_min_lr)
 loss_fn = nn.L1Loss()
+def loss_fn2(y_pred, y_true, weights):
+    x = abs(y_pred - y_true)
+    x = x * weights
+    out = torch.mean(x)
+    return out
+
 writer = SummaryWriter("runs/" + save_name)
 
 # train
@@ -50,7 +54,9 @@ for epoch in range(num_epochs):
         yb = yb.to(device=device, dtype=torch.float32)
         optimizer.zero_grad()
         pred = net(xb)
-        loss = loss_fn(pred, yb)
+        loss1 = loss_fn(pred, yb)
+        loss2 = loss_fn2(pred, yb, xb)
+        loss = loss1 + 0.5 * loss2
         epoch_loss += loss.item()
         loss.backward()
         optimizer.step()
