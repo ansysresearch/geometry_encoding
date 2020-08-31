@@ -4,9 +4,9 @@ from network import get_network
 from utils import plot_data, read_data
 
 network_id = "UNet"
-dataset_id = "all256"
+dataset_id = "all50"
 save_name  = network_id + "_" + dataset_id
-plot_arg = 2
+plot_arg = 1
 
 if plot_arg == 2:
     data_file = "checkpoints/train_predictions_UNet_all256.npy"

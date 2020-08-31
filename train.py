@@ -36,9 +36,11 @@ scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=scheduler_p
                                                  factor=scheduler_factor,
                                                  verbose=True, min_lr=scheduler_min_lr)
 loss_fn = nn.L1Loss()
-def loss_fn2(y_pred, y_true, weights):
+gamma = 20
+def loss_fn2(y_pred, y_true):
+    weights = (y_true < 0.1).type(torch.float32)
     x = abs(y_pred - y_true)
-    x = x * weights
+    x = x * weights * abs(y_true)
     out = torch.mean(x)
     return out
 
@@ -55,8 +57,8 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         pred = net(xb)
         loss1 = loss_fn(pred, yb)
-        loss2 = loss_fn2(pred, yb, xb)
-        loss = loss1 + 0.5 * loss2
+        loss2 = loss_fn2(pred, yb)
+        loss = loss1 + gamma * loss2
         epoch_loss += loss.item()
         loss.backward()
         optimizer.step()
@@ -70,7 +72,9 @@ for epoch in range(num_epochs):
         xbv = xbv.to(device=device, dtype=torch.float32)
         ybv = ybv.to(device=device, dtype=torch.float32)
         predv = net(xbv)
-        lossv = loss_fn(predv, ybv)
+        loss1v = loss_fn(predv, ybv)
+        loss2v = loss_fn2(predv, ybv)
+        lossv = loss1v + gamma * loss2v
         epoch_lossv += lossv.item()
 
     epoch_lossv /= len(val_loader)
