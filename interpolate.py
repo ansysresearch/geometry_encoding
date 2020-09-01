@@ -9,7 +9,7 @@ from utils import read_data
 
 network_id = "UNet"
 dataset_id = "all128"
-network_file = "UNet_all128_g100_2"
+network_file = "UNet_all128"
 
 device = 'cpu' # torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 net = get_network(network_id=network_id).to(device=device)
@@ -52,7 +52,7 @@ def plot_interpolation_results(file_name, n=10):
         img, xp, yp, sdf, sdf_pred = data[idx]
         img = img.squeeze()
 
-        err = abs(sdf - sdf_pred)
+        err = sdf - sdf_pred
         err_rel = np.minimum(1, err / (abs(sdf) + 0.01))
         err_log = np.log10(abs(err))
         err_rel_log = np.log10(abs(err_rel))
@@ -61,11 +61,11 @@ def plot_interpolation_results(file_name, n=10):
         plt.xticks(np.linspace(0, img.shape[0], 5), np.linspace(-1, 1, 5))
         plt.yticks(np.linspace(0, img.shape[1], 5), np.linspace(-1, 1, 5))
         plt.gca().invert_yaxis()
-        plt.scatter((xp + 1) * img.shape[0] / 2, (yp + 1) * img.shape[1] / 2, c=err_rel, s=10, norm=matplotlib.colors.LogNorm())
+        plt.scatter((xp + 1) * img.shape[0] / 2, (yp + 1) * img.shape[1] / 2, c=err, s=10, norm=matplotlib.colors.LogNorm())
         plt.colorbar()
 
         plt.subplot(2, 2, 2)
-        plt.hist(err_rel_log, bins=np.linspace(-10, 0, 20), weights=np.ones_like(sdf)/sdf.shape[0])
+        plt.hist(err_log, bins=np.linspace(-10, 0, 20), weights=np.ones_like(sdf)/sdf.shape[0])
         plt.xlabel("log(error)")
         plt.ylabel("frequency ratio")
         plt.show()
@@ -93,7 +93,7 @@ test_interpolate_data = interpolate_sdf(test_ds, n=500)
 
 save_name = "checkpoints/test_interpolate_data" + network_file + ".npy"
 np.save(save_name, test_interpolate_data)
-#plot_interpolation_results(save_name)
+# plot_interpolation_results(save_name)
 
 er, er_rel = aggregate_results(save_name)
 er_m = er.mean(axis=1)

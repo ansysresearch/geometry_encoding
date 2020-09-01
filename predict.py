@@ -9,9 +9,9 @@ if plot_arg == 2:
     data_file = "checkpoints/train_predictions_UNet_all256.npy"
     plot_data(data_file)
 else:
-    network_id = "UNet4"
+    network_id = "UNet2"
     dataset_id = "all50"
-    save_name  = "UNet4_all50"
+    save_name  = "UNet2_all50"
     def compute_prediction(ds):
         saved_list = []
         for idx in np.random.randint(0, len(ds), 10):
