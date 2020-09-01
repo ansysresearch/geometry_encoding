@@ -31,8 +31,37 @@ class UNet(nn.Module):
         x = self.outc(x)
         return x
 
-    def num_params(self):
-        return
+
+class UNet4(nn.Module):
+    def __init__(self, n_channels, n_classes):
+        super().__init__()
+
+        self.inc = DoubleConv(n_channels, 64, 64)
+        self.down1 = Down(64, 128)
+        self.down2 = Down(128, 256)
+        self.down3 = Down(256, 512)
+        self.down4 = Down(512, 512)
+        self.up1 = Up(1024, 256)
+        self.up2 = Up(512, 128)
+        self.up3 = Up(256, 64)
+        self.up4 = Up(128, 64)
+        self.outc1 = OutConv(64, n_channels)
+        self.outc2 = OutConv(n_channels * 2, n_classes)
+
+    def forward(self, x):
+        x1 = self.inc(x)
+        x2 = self.down1(x1)
+        x3 = self.down2(x2)
+        x4 = self.down3(x3)
+        x5 = self.down4(x4)
+        x6 = self.up1(x5, x4)
+        x7 = self.up2(x6, x3)
+        x8 = self.up3(x7, x2)
+        x9 = self.up4(x8, x1)
+        x10 = self.outc1(x9)
+        x11 = torch.cat([x10, x], dim=1)
+        out = self.outc2(x11)
+        return out
 
 
 class UNet2(nn.Module):
@@ -124,3 +153,5 @@ def get_network(network_id):
         return UNet2(n_channels=1, n_classes=1)
     elif network_id == "UNet3":
         return UNet3(n_channels=1, n_classes=1)
+    elif network_id == "UNet4":
+        return UNet4(n_channels=1, n_classes=1)

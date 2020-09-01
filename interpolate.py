@@ -9,7 +9,7 @@ from utils import read_data
 
 network_id = "UNet"
 dataset_id = "all128"
-network_file = "UNet_all128"
+network_file = "UNet_all128_g100_2"
 
 device = 'cpu' # torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 net = get_network(network_id=network_id).to(device=device)
@@ -116,10 +116,7 @@ plt.ylabel("(sdf - predicted sdf)/ (abs(sdf) + 0.01)")
 plt.ylim(-0.1, 0.1)
 plt.show()
 
-plt.hist(np.log10(er_rel.flatten()), bins=np.linspace(-10, 0, 20))#, weights=np.ones_like(er.flatten()) / er.flatten().shape[0])
-plt.xlabel("log(error)")
-plt.ylabel("frequency ratio")
-plt.show()
+plot_interpolation_results(save_name)
 
 # for idx in np.random.randint(0, 200, 10):
 #     X_idx = X[idx, :, :, :]

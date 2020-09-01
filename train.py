@@ -5,9 +5,9 @@ from network import get_network
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-network_id = "UNet"
+network_id = "UNet4"
 dataset_id = "all50"
-save_name  = network_id + "_" + dataset_id
+save_name  = "UNet4_all50"
 num_epochs = 100
 save_every = 20
 batch_size = 50
@@ -36,13 +36,13 @@ scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=scheduler_p
                                                  factor=scheduler_factor,
                                                  verbose=True, min_lr=scheduler_min_lr)
 loss_fn = nn.L1Loss()
-gamma = 20
-def loss_fn2(y_pred, y_true):
-    weights = (y_true < 0.1).type(torch.float32)
-    x = abs(y_pred - y_true)
-    x = x * weights * abs(y_true)
-    out = torch.mean(x)
-    return out
+# gamma = 20
+# def loss_fn2(y_pred, y_true):
+#     weights = (y_true < 0.1).type(torch.float32)
+#     x = abs(y_pred - y_true)
+#     x = x * weights * abs(y_true)
+#     out = torch.mean(x)
+#     return out
 
 writer = SummaryWriter("runs/" + save_name)
 
@@ -56,9 +56,9 @@ for epoch in range(num_epochs):
         yb = yb.to(device=device, dtype=torch.float32)
         optimizer.zero_grad()
         pred = net(xb)
-        loss1 = loss_fn(pred, yb)
-        loss2 = loss_fn2(pred, yb)
-        loss = loss1 + gamma * loss2
+        loss = loss_fn(pred, yb)
+        # loss2 = loss_fn2(pred, yb)
+        # loss = loss1 + gamma * loss2
         epoch_loss += loss.item()
         loss.backward()
         optimizer.step()
@@ -72,9 +72,9 @@ for epoch in range(num_epochs):
         xbv = xbv.to(device=device, dtype=torch.float32)
         ybv = ybv.to(device=device, dtype=torch.float32)
         predv = net(xbv)
-        loss1v = loss_fn(predv, ybv)
-        loss2v = loss_fn2(predv, ybv)
-        lossv = loss1v + gamma * loss2v
+        lossv = loss_fn(predv, ybv)
+        # loss2v = loss_fn2(predv, ybv)
+        # lossv = loss1v + gamma * loss2v
         epoch_lossv += lossv.item()
 
     epoch_lossv /= len(val_loader)
