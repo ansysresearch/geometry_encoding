@@ -5,9 +5,9 @@ from network import get_network
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-network_id = "UNet4"
+network_id = "UNet5"
 dataset_id = "all50"
-save_name  = "UNet4_all50"
+save_name  = "UNet5_all50"
 num_epochs = 100
 save_every = 20
 batch_size = 50

@@ -1,28 +1,28 @@
 from data.sympy_helper import *
+from data.utils import plot_sdf
 from sympy import Symbol, Array
 from sympy.utilities.lambdify import lambdify
 
-"""
-This files contains the implementation for the signed distance function of several 
-geometries including circle, rectangle, triangle, diamond and cross-shape. 
-
-The equation for the signed distance functions are obtained from 
- https://www.iquilezles.org/www/articles/distfunctions2d/distfunctions2d.htm
- 
-All object are by default centered at origin. One may use .translate, .rotate or .resize 
-methods to modify the objects. 
-"""
-#TODO: Triangle and IsosclesTriangle classes don't yet work properly.
 
 class Geom:
     """
     The parent class which takes a parameters as params.
     The children class only need to specify the function compute_sdf.
-    Assumed 2D geometry for now.
+    Assumed 2D geometry.  See geoms3.py for 3D geometry
+
+    The children classes contain analytical expression for the signed distance function of several
+    geometries including circle, rectangle, triangle, diamond and cross-shape.
+
+    The equation for the signed distance functions are obtained from
+    https://www.iquilezles.org/www/articles/distfunctions2d/distfunctions2d.htm
+
+    All object are by default centered at origin. One may use .translate, .rotate or .resize
+    methods to modify the objects.
     """
     def __init__(self, params, compute_sdf=True):
         self.x = Symbol('x', real=True)
         self.y = Symbol('y', real=True)
+
         self.params = params
         self.sdf = None
         if compute_sdf: self.compute_sdf()
@@ -44,8 +44,19 @@ class Geom:
     def lambdified_sdf(self):
         return lambdify([self.x, self.y], self.sdf, modules=SIMPY_2_NUMPY_DICT)
 
-    def eval_sdf(self, x, y):
+    def eval_sdf(self, x, y, z=None):
+        """
+        evaluate sign distance function at point (x,y, [z]) .
+        ** we need to introduce z to keep the same function signature for the children class Geom3.
+
+        :param x: x-coordinate, np.array
+        :param y: y-coordinate, np.array
+        :param z: z-coordinate. None for 2d geometries, or np.array for 3d geometries
+        :return: sdf value, np.array
+        """
         sdf_lambdify = self.lambdified_sdf()
+        if z is not None:
+            raise(ValueError("z should be loaded only for 3d geometry."))
         return sdf_lambdify(x, y)
 
     # plot binary and sdf images.
@@ -54,8 +65,13 @@ class Geom:
         img = sdf < 0
         plot_sdf(img, sdf, xticks=xticks, yticks=yticks, plot_eikonal=plot_eikonal)
 
-    # move in the direction of the vector t[0], t[1]
     def translate(self, t):
+        """
+        move in the direction of the vector t[0], t[1]
+
+        :param t: translation vector
+        :return: translated object.
+        """
         sub_dict = {self.x: self.x - t[0], self.y: self.y - t[1]}
         self.sdf = self.sdf.subs(sub_dict)
         return self
@@ -64,6 +80,15 @@ class Geom:
     # if we change both coordinate at the same time, something weird happens.
     # the second coordinate gets values of already changed first coordinate.
     def rotate(self, th):
+        """
+        rotate with angle th (in radian) counter-clockwise
+        ** if we change both coordinate at the same time, something weird happens.
+        ** the second coordinate gets values of already changed first coordinate.
+        ** hence w is introduced
+
+        :param th: angle of rotation
+        :return: rotated object
+        """
         w = Symbol('w')
         sub_dict_1 = {self.x: np.cos(th) * self.x + np.sin(th) * w}
         self.sdf = self.sdf.subs(sub_dict_1)
@@ -73,9 +98,14 @@ class Geom:
         self.sdf = self.sdf.subs(sub_dict_3)
         return self
 
-    # scale by s in x and y directions.
-    # use the trick http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/
     def scale(self, s):
+        """
+        scale by s in x and y directions.
+        use the trick http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/
+
+        :param s: scaling factor
+        :return: scaled object
+        """
         sub_dict = {self.x: self.x / s, self.y: self.y / s}
         self.sdf = self.sdf.subs(sub_dict) * s
         return self

@@ -118,6 +118,56 @@ class UNet4(nn.Module):
         return x10
 
 
+class UNet5(nn.Module):
+    def __init__(self):
+        super().__init__()
+        n_channels, n_classes = 1, 1
+        channels = [64, 64, 64, 64, 64]
+        self.inc = DoubleConv(n_channels, channels[0], channels[0])
+        self.down1 = Down(channels[0], channels[1])
+        self.down2 = Down(channels[1], channels[2])
+        self.down3 = Down(channels[2], channels[3])
+        self.down4 = Down(channels[3], channels[4])
+
+        self.up11 = Up(channels[0] + channels[1], channels[1])
+        self.up12 = Up(channels[1] + channels[2], channels[2])
+        self.up13 = Up(channels[2] + channels[3], channels[3])
+        self.up14 = Up(channels[3] + channels[4], channels[4])
+
+        self.up21 = Up(channels[1] + channels[2], channels[2])
+        self.up22 = Up(channels[2] + channels[3], channels[3])
+        self.up23 = Up(channels[3] + channels[4], channels[4])
+
+        self.up31 = Up(channels[2] + channels[3], channels[3])
+        self.up32 = Up(channels[3] + channels[4], channels[4])
+
+        self.up41 = Up(channels[3] + channels[4], channels[4])
+        self.outc = OutConv(channels[4], n_classes)
+
+    def forward(self, x):
+        x00 = self.inc(x)
+        x10 = self.down1(x00)
+        x20 = self.down2(x10)
+        x30 = self.down3(x20)
+        x40 = self.down4(x30)
+
+        x01 = self.up11(x00, x10)
+        x11 = self.up12(x10, x20)
+        x21 = self.up13(x20, x30)
+        x31 = self.up14(x30, x40)
+
+        x02 = self.up21(x01, x11)
+        x12 = self.up22(x11, x21)
+        x22 = self.up23(x21, x31)
+
+        x03 = self.up31(x02, x12)
+        x13 = self.up32(x12, x22)
+
+        x04 = self.up41(x03, x13)
+        out = self.outc(x04)
+        return out
+
+
 class Net(nn.Module):
     def __init__(self, n_channels, n_classes):
         super().__init__()
@@ -149,4 +199,6 @@ def get_network(network_id):
     elif network_id == "UNet3":
         return UNet3(n_channels=1, n_classes=1)
     elif network_id == "UNet4":
+        return UNet4(n_channels=1, n_classes=1)
+    elif network_id == "UNet5":
         return UNet4(n_channels=1, n_classes=1)
