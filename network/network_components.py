@@ -57,7 +57,6 @@ class Up(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
 
-        # if bilinear, use the normal convolutions to reduce the number of channels
         self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
         self.conv = DoubleConv(in_channels, in_channels // 2, out_channels)
 
@@ -73,10 +72,37 @@ class Up(nn.Module):
         return self.conv(x)
 
 
-class OutConv(nn.Module):
+class Up2(nn.Module):
+    """Upscaling then double conv"""
+
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
+
+        self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.conv = DoubleConv(in_channels, in_channels // 2, out_channels)
+
+    def forward(self, xvec):
+        x0 = xvec[0]
+        x1 = xvec[1]
+
+        x0 = self.up(x0)
+
+        # input is CHW
+        diff_y = x1.size()[2] - x0.size()[2]
+        diff_x = x1.size()[3] - x0.size()[3]
+        if diff_y > 0 or diff_x > 0:
+            x0 = F.pad(x0, [diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2])
+
+        xvec[0] = x0
+        x = torch.cat(xvec, dim=1)
+        return self.conv(x)
+
+
+class OutConv(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=1):
+        super().__init__()
+        padding = kernel_size // 2
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, padding=padding)
 
     def forward(self, x):
         return self.conv(x)

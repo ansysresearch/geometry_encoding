@@ -4,9 +4,9 @@ from network import get_network
 from utils import plot_data
 
 
-network_id = "UNet"
-network_file = "UNet_all256"
-data_name = "data/exotic_shapes/exotic_shapes256.npy"
+network_id = "UNet3"
+network_file = "UNet3_all128"
+data_name = "data/exotic_shapes/exotic_shapes128.npy"
 
 device = 'cpu' # torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 net = get_network(network_id=network_id).to(device=device)
