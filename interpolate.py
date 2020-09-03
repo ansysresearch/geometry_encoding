@@ -7,12 +7,13 @@ from scipy.interpolate import RectBivariateSpline
 from network import get_network
 from utils import read_data
 
-network_id = "UNet"
+dtype = torch.float32
+network_id = "UNet6"
 dataset_id = "all128"
-network_file = "UNet_all128"
+network_file = "UNet6_all128"
 
 device = 'cpu' # torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-net = get_network(network_id=network_id).to(device=device)
+net = get_network(network_id=network_id).to(device=device, dtype=dtype)
 try:
     net.load_state_dict(torch.load("checkpoints/" + network_file + ".pth"))
 except RuntimeError:
@@ -30,7 +31,7 @@ def interpolate_sdf(ds, n=10):
     for idx in tqdm(np.random.randint(0, len(ds), n)):
         img, _, pnts, pnts_sdf = ds[idx]
         img = torch.unsqueeze(img, 0)
-        img = img.to(device=device, dtype=torch.float32)
+        img = img.to(device=device, dtype=dtype)
         with torch.no_grad():
             img_sdf = net(img)
         img_sdf = torch.squeeze(img_sdf).numpy()

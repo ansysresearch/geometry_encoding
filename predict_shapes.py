@@ -3,13 +3,13 @@ import numpy as np
 from network import get_network
 from utils import plot_data
 
-
-network_id = "UNet3"
-network_file = "UNet3_all128"
+dtype = torch.float32
+network_id = "UNet6"
+network_file = "UNet6_all128"
 data_name = "data/exotic_shapes/exotic_shapes128.npy"
 
 device = 'cpu' # torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-net = get_network(network_id=network_id).to(device=device)
+net = get_network(network_id=network_id).to(device=device, dtype=dtype)
 try:
     net.load_state_dict(torch.load("checkpoints/" + network_file + ".pth"))
 except RuntimeError:
@@ -28,7 +28,7 @@ saved_list = []
 for img, sdf in zip(X, Y):
     img = img.unsqueeze(0)
     sdf = sdf.unsqueeze(0)
-    img = img.to(device=device, dtype=torch.float32)
+    img = img.to(device=device, dtype=dtype)
 
     with torch.no_grad():
         sdf_pred = net(img)

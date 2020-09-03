@@ -174,7 +174,7 @@ class UNet6(nn.Module):
     def __init__(self):
         super().__init__()
         n_channels, n_classes = 1, 1
-        channels = [64, 64, 64, 64, 64]
+        channels = [64, 128, 256, 128, 64]
         self.inc = DoubleConv(n_channels, channels[0], channels[0])
         self.down1 = Down(channels[0], channels[1])
         self.down2 = Down(channels[1], channels[2])
@@ -220,6 +220,57 @@ class UNet6(nn.Module):
         return out
 
 
+class UNet7(nn.Module):
+    def __init__(self):
+        super().__init__()
+        n_channels, n_classes = 1, 1
+        channels = [64, 64, 64, 64, 64]
+        self.inc = DoubleConv(n_channels, channels[0], channels[0])
+        self.down1 = Down(channels[0], channels[1])
+        self.down2 = Down(channels[1], channels[2])
+        self.down3 = Down(channels[2], channels[3])
+        self.down4 = Down(channels[3], channels[4])
+
+        self.up11 = Up2(channels[0] + channels[1], channels[1])
+        self.up12 = Up2(channels[1] + channels[2], channels[2])
+        self.up13 = Up2(channels[2] + channels[3], channels[3])
+        self.up14 = Up2(channels[3] + channels[4], channels[4])
+
+        self.up21 = Up2(channels[0] + channels[1] + channels[2], channels[2])
+        self.up22 = Up2(channels[1] + channels[2] + channels[3], channels[3])
+        self.up23 = Up2(channels[2] + channels[3] + channels[4], channels[4])
+
+        self.up31 = Up2(channels[0] + channels[1] + channels[2] + channels[3], channels[3])
+        self.up32 = Up2(channels[1] + channels[2] + channels[3] + channels[4], channels[4])
+
+        self.up41 = Up2(channels[0] + channels[1] + channels[2] + channels[3] + channels[4], channels[4])
+        self.outc = OutConv(channels[0] + channels[1] + channels[2] + channels[3] + channels[4], n_classes)
+
+    def forward(self, x):
+        x00 = self.inc(x)
+        x10 = self.down1(x00)
+        x20 = self.down2(x10)
+        x30 = self.down3(x20)
+        x40 = self.down4(x30)
+
+        x01 = self.up11([x10, x00])
+        x11 = self.up12([x20, x10])
+        x21 = self.up13([x30, x20])
+        x31 = self.up14([x40, x30])
+
+        x02 = self.up21([x11, x00, x01])
+        x12 = self.up22([x21, x10, x11])
+        x22 = self.up23([x31, x20, x21])
+
+        x03 = self.up31([x12, x00, x01, x02])
+        x13 = self.up32([x22, x10, x11, x12])
+
+        x04 = self.up41([x13, x00, x01, x02, x03])
+
+        x_tot = torch.cat([x00, x01, x02, x03, x04], dim=1)
+        out = self.outc(x_tot)
+        return out
+
 class Net(nn.Module):
     def __init__(self, n_channels, n_classes):
         super().__init__()
@@ -256,3 +307,5 @@ def get_network(network_id):
         return UNet5()
     elif network_id == "UNet6":
         return UNet6()
+    elif network_id == "UNet7":
+        return UNet7()

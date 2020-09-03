@@ -5,9 +5,9 @@ from network import get_network
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-network_id = "UNet6"
+network_id = "UNet7"
 dataset_id = "all50"
-save_name  = "UNet6_all50"
+save_name  = "UNet7_all50"
 num_epochs = 100
 save_every = 20
 batch_size = 50
@@ -17,6 +17,8 @@ scheduler_patience = 3
 scheduler_min_lr = 5e-6
 scheduler_factor = 0.2
 checkpoint_dir = "checkpoints/"
+dtype = torch.float64
+
 
 # read data
 train_ds, val_ds = read_data(dataset_id, val_frac=val_frac)
@@ -30,7 +32,7 @@ if device == torch.device('cuda'):
     if gpu_id: torch.cuda.set_device(gpu_id)
 
 # read network and setup optimizer, loss
-net = get_network(network_id).to(device=device)
+net = get_network(network_id).to(device=device, dtype=dtype)
 optimizer = optim.Adam(net.parameters(), lr=lr)
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=scheduler_patience,
                                                  factor=scheduler_factor,
@@ -52,8 +54,8 @@ for epoch in range(num_epochs):
     net.train()
     epoch_loss = 0
     for xb, yb in train_loader:
-        xb = xb.to(device=device, dtype=torch.float32)
-        yb = yb.to(device=device, dtype=torch.float32)
+        xb = xb.to(device=device, dtype=dtype)
+        yb = yb.to(device=device, dtype=dtype)
         optimizer.zero_grad()
         pred = net(xb)
         loss = loss_fn(pred, yb)
@@ -69,8 +71,8 @@ for epoch in range(num_epochs):
 
     epoch_lossv = 0
     for xbv, ybv in val_loader:
-        xbv = xbv.to(device=device, dtype=torch.float32)
-        ybv = ybv.to(device=device, dtype=torch.float32)
+        xbv = xbv.to(device=device, dtype=dtype)
+        ybv = ybv.to(device=device, dtype=dtype)
         predv = net(xbv)
         lossv = loss_fn(predv, ybv)
         # loss2v = loss_fn2(predv, ybv)

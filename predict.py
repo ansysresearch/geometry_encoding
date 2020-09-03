@@ -9,15 +9,16 @@ if plot_arg == 2:
     data_file = "checkpoints/train_predictions_UNet_all256.npy"
     plot_data(data_file)
 else:
+    dtype = torch.float32
     network_id = "UNet6"
-    dataset_id = "all50"
-    save_name  = "UNet6_all50"
+    dataset_id = "all128"
+    save_name  = "UNet6_all128"
     def compute_prediction(ds):
         saved_list = []
         for idx in np.random.randint(0, len(ds), 10):
             img, sdf = ds[idx]
             img = img.unsqueeze(0)
-            img = img.to(device=device, dtype=torch.float32)
+            img = img.to(device=device, dtype=dtype)
             with torch.no_grad():
                 sdf_pred = net(img)
             sdf = sdf.squeeze()
@@ -27,7 +28,7 @@ else:
 
 
     device = 'cpu'
-    net = get_network(network_id=network_id).to(device=device)
+    net = get_network(network_id=network_id).to(device=device, dtype=dtype)
     #net.load_state_dict(torch.load("checkpoints/" + save_name + ".pth"))
     net.load_state_dict(torch.load("checkpoints/" + save_name + ".pth", map_location=device))
     net.eval()
