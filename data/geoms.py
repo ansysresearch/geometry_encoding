@@ -110,6 +110,12 @@ class Geom:
         self.sdf = self.sdf.subs(sub_dict) * s
         return self
 
+    def union(self, other):
+        union_geom = self.copy()
+        union_geom.sdf = Min(self.sdf, other.sdf)
+        union_geom.params = [self, other]
+        return union_geom
+
 
 class Circle(Geom):
     """
@@ -230,23 +236,32 @@ class nGon(Geom):
         sgn1 = get_sign()
         self.sdf = f_min3(Array(d)) * (1 - 2 * sgn1)
 
-#
-# class CombinedGeom(Geom):
-#     # combine two geometries
-#     def __init__(self, params, method='union'):
-#         self.method = method
-#         super().__init__(params)
-#
-#     def __repr__(self):
-#         return "combined geometry"
-#
-#     def compute_sdf(self):
-#         if self.method == "union":
-#             self.sdf = Min(*[g.sdf for g in self.params])
-#         elif self.method == "intersection":
-#             self.sdf = Max(*[g.sdf for g in self.params])
-#         else:
-#             raise(NotImplementedError("This method is not implemented."))
+
+def compute_sdf_from_img1(img):
+    assert np.ndim(img) == 2
+    assert img.shape[0] == img.shape[1]
+    sdf = np.zeros(img.shape)
+    m, n = sdf.shape
+    img_b_idx = np.array(np.where(img == 0)).T
+    img_w_idx = np.array(np.where(img == 1)).T
+    for i in range(m):
+        for j in range(n):
+            if img[i, j] == 1:
+                sdf[i, j] = - np.min(np.sqrt(((img_b_idx - [i, j]) ** 2).sum(axis=1)))
+            elif img[i, j] == 0:
+                sdf[i, j] = np.min(np.sqrt(((img_w_idx - [i, j]) ** 2).sum(axis=1)))
+            else:
+                raise("ERROR")
+    sdf = sdf / (img.shape[0] / 2)
+    return sdf
+
+def compute_sdf_from_img2(img):
+    assert np.ndim(img) == 2
+    assert img.shape[0] == img.shape[1]
+
+    img2 = np.ones_like(img) * 4
+    img2 = img[:, :-1] + img[:, 1:] + img[:-1, :] + img[1:, :]
+    border = img
 
 
 def merge_geoms(geoms, x, y):
@@ -258,28 +273,48 @@ def merge_geoms(geoms, x, y):
 
 if __name__ == "__main__":
     EPS = 1e-2
-    Nx, Ny = 1000, 1000
+    Nx, Ny = 200, 200
     x, y = np.meshgrid(np.linspace(-1, 1, Nx), np.linspace(-1, 1, Ny))
-    geoms = [#Circle(0.5), Circle(0.5).translate((0.5, 0.2)),
-             Rectangle([0.2, 0.3]),
-             Rectangle([0.2, 0.3]).translate((0.7, 0.7)),
-             Rectangle([0.2, 0.3]).translate((0.7, 0.7)),
-
-             Diamond([0.2, 0.3]).scale(1.5),
-             nGon([[-0.3, -0.3], [0.3, 0.], [0., 0.6]]),
-             Rectangle([0.4, 0.3]).rotate(1),
-             CrossX([0.5, 0.1]),
-             nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]),
-             nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]).translate((0.4, 0.2)),
-             nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]).translate((0.4, 0.2)).rotate(0.5),
-             nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]).translate((0.4, 0.2)).scale(0.4)
-             ]
+    # geoms = [Circle(0.5),
+    #          Circle(0.5).translate((0.5, 0.2)).scale(0.3),
+    #          nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]),
+    #          nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]).translate((0.4, .3)).rotate(1.),
+    #          Rectangle([0.2, 0.3]),
+    #          Rectangle([0.2, 0.3]).translate((0.7, 0.7)),
+    #          Diamond([0.2, 0.3]).scale(1.5),
+    #          CrossX([0.5, 0.1]),
+    #          nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]),
+    #          ]
     # for g in geoms:
     #     g.plot_sdf(x, y, plot_eikonal=True)
 
+    geom1 = Rectangle([0.5, 0.2])
+    sdf1 = geom1.eval_sdf(x, y)
+    img1 = sdf1 < 0
 
-    geom = Rectangle([0.2, 0.3])
-    geom2 = geom.copy().rotate(0.3)
-    geom.plot_sdf(x, y)
-    geom2.plot_sdf(x, y)
+    plot_sdf(img1, sdf1, plot_eikonal=True, show=False)
+    sdf1_check = compute_sdf_from_img(img1)
+    img1_check = sdf1_check < 0
+    plot_sdf(img1_check, sdf1_check, plot_eikonal=True)
 
+    geom2 = nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]])
+    geom3 = geom2.copy().rotate(0.3).translate((0.3, 0.2))
+    geoms = [geom1, geom3]
+    for g in geoms:
+        sdf = g.eval_sdf(x, y)
+        img = sdf < 0
+        plot_sdf(img, sdf, plot_eikonal=True, show=False)
+
+    geom4 = geom1.union(geom3)
+    sdf4 = geom4.eval_sdf(x, y)
+    img4 = sdf4 < 0
+    plot_sdf(img4, sdf4, plot_eikonal=True, show=False)
+
+    img5, sdf5 = merge_geoms(geoms, x, y)
+    plot_sdf(img5, sdf5, plot_eikonal=True, show=False)
+
+    sdf6 = compute_sdf_from_img(img5)
+    plot_sdf(img5, sdf6, plot_eikonal=True)
+
+    import matplotlib.pyplot as plt
+    print(np.any(abs(sdf4 - sdf5) > 1e-6))

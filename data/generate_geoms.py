@@ -172,11 +172,12 @@ def generate_data(obj_list, img_resolution=100, n_obj=500, save_name="data", plo
 
 if __name__ == "__main__":
 
-    g1 = Circle(0.5)
-    g2 = Circle(0.2)
-    g3 = Diamond((0.2, 0.2)).translate((0.22, 0.22))
+    g1 = CrossX((0.6, 0.1)).rotate(0.2)
+    g2 = Circle(0.5).translate((0.4, -0.3))
+    g3 = Diamond((0.6, 0.2)).rotate(0.3).translate((-0.3, -0.3))
+    g4 = nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]).rotate(0.3).translate((-0.5, 0.8))
     x, y = np.meshgrid(np.linspace(-1, 1, 100), np.linspace(-1, 1, 100))
-    sdf = np.min([g.eval_sdf(x, y) for g in [g1, g2, g3]], axis=0)
+    sdf = np.min([g.eval_sdf(x, y) for g in [g1, g3, g2, g4]], axis=0)
     plot_sdf(sdf<0, sdf)
 
     generate_data(["Circle", "nGon", "Rectangle"], img_resolution=100, n_obj=5, n_sample=1000, save_name="data", plot=True)

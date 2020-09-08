@@ -1,22 +1,21 @@
-import torch
 import numpy as np
 from network import get_network
-from utils import plot_data
+from params import *
 
-dtype = torch.float32
-network_id = "UNet6"
-network_file = "UNet6_all128"
-data_name = "data/exotic_shapes/exotic_shapes128.npy"
+dtype      = DATA_TYPE
+network_id = NETWORK_ID
+dataset_id = "data/exotic_shapes/exotic_shapes" + str(IMAGE_RESOLUTION) + ".npy"
+save_name  = NETWORK_SAVE_NAME
+n_prediction   = COMPUTE_PREDICTIONS_NUM
+network_save_dir = NETWORK_SAVE_DIRECTORY
+prediction_save_dir = PREDICTION_SAVE_DIRECTORY
 
-device = 'cpu' # torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
 net = get_network(network_id=network_id).to(device=device, dtype=dtype)
-try:
-    net.load_state_dict(torch.load("checkpoints/" + network_file + ".pth"))
-except RuntimeError:
-    net.load_state_dict(torch.load("checkpoints/" + network_file + ".pth", map_location=device))
+net.load_state_dict(torch.load(network_save_dir + save_name + ".pth", map_location=device))
 net.eval()
 
-X = np.load(data_name).astype(float)
+X = np.load(dataset_id).astype(float)
 img_resolution = X.shape[-1]
 X = X.reshape((-1, 1, img_resolution, img_resolution))
 Y = X.copy()
@@ -37,9 +36,8 @@ for img, sdf in zip(X, Y):
     sdf = sdf.squeeze()
     sdf_pred = sdf_pred.squeeze()
 
-    saved_list.append((sdf.numpy().copy(), sdf_pred.numpy().copy()))
+    saved_list.append([sdf.numpy().copy(), sdf_pred.numpy().copy()])
 
-save_list = np.array(saved_list)
-test_prediction_exotic_shapes_file_name = "checkpoints/test_predictions_exotic_shapes_" + network_file + ".npy"
-np.save(test_prediction_exotic_shapes_file_name, save_list)
-plot_data(test_prediction_exotic_shapes_file_name)
+saved_list = np.array(saved_list)
+test_prediction_exotic_shapes_file_name = prediction_save_dir + "test_predictions_exotic_shapes_" + save_name + ".npy"
+np.save(test_prediction_exotic_shapes_file_name, saved_list)

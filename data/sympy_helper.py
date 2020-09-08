@@ -32,24 +32,24 @@ def sign_func(x):
     y[x == 0] = 0
     y[x < 0] = -1
     return y
-f_sign = implemented_function(Function('f_sign'), sign_func)
+f_sign = implemented_function(Function('f_sign', real=True), sign_func)
 
 
 def heaviside_func(x):
     y = np.ones_like(x)
     y[x <= 0] = 0
     return y
-f_heaviside = implemented_function(Function('f_heaviside'), heaviside_func)
+f_heaviside = implemented_function(Function('f_heaviside', real=True), heaviside_func)
 
 
 def min3_func(x):
     return np.minimum.reduce(x)
-f_min3 = implemented_function(Function('f_min3'), min3_func)
+f_min3 = implemented_function(Function('f_min3', real=True), min3_func)
 
 
 def max3_func(x):
     return np.maximum.reduce(x)
-f_max3 = implemented_function(Function('f_max3'), max3_func)
+f_max3 = implemented_function(Function('f_max3', real=True), max3_func)
 
 
 SIMPY_2_NUMPY_DICT = {
