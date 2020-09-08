@@ -146,15 +146,18 @@ def generate_data(obj_list, img_resolution=100, n_obj=500, save_name="data", plo
     np.save("data/datasets/img_" + save_name + ".npy", sdf < 0)
     np.save("data/datasets/sdf_" + save_name + ".npy", sdf)
 
-    print("sampling points on the boundary")
-    pnts1 = [sample_near_geometry(geom, int(n_sample*0.2), lb=-0.01, ub=0.01) for geom in geoms]
-
-    print("sampling points near the boundary")
-    pnts2 = [sample_near_geometry(geom, int(n_sample*0.2), lb=-0.1, ub=0.1) for geom in geoms]
-
-    print("sampling points anywhere else")
-    pnts3 = [sample_near_geometry(geom, int(n_sample*0.6), lb=-5, ub=5) for geom in geoms]
-    pnts = np.concatenate([pnts1, pnts2, pnts3], axis=2)
+    # print("sampling points on the boundary")
+    # pnts1 = [sample_near_geometry(geom, int(n_sample*0.2), lb=-0.01, ub=0.01) for geom in geoms]
+    #
+    # print("sampling points near the boundary")
+    # pnts2 = [sample_near_geometry(geom, int(n_sample*0.2), lb=-0.1, ub=0.1) for geom in geoms]
+    #
+    # print("sampling points anywhere else")
+    # pnts3 = [sample_near_geometry(geom, int(n_sample*0.6), lb=-5, ub=5) for geom in geoms]
+    # pnts = np.concatenate([pnts1, pnts2, pnts3], axis=2)
+    print("sample points")
+    pnts = [sample_near_geometry(geom, n_sample, lb=-5, ub=5) for geom in geoms]
+    pnts = np.array(pnts)
 
     print("save sampling points")
     np.save("data/datasets/pnt_" + save_name + ".npy", pnts)

@@ -1,7 +1,6 @@
 import numpy as np
 #from mayavi import mlab
 import matplotlib.pyplot as plt
-from scipy.ndimage import distance_transform_edt
 
 
 def plot_sdf(img, sdf, xticks=(-1, 1), yticks=(-1, 1), plot_eikonal=False, show=True):
@@ -58,20 +57,3 @@ def plot_ply(ply):
                              color=(1, 0, 0.4), opacity=0.5)
     mlab.show()
 
-
-def to_scipy_sdf(file_name):
-    imgs = np.load("datasets/img_" + file_name + ".npy")
-    scipy_sdfs = []
-    for img in imgs:
-        s1, s2 = img.shape
-        assert s1 == s2
-        assert np.all(np.unique(img) == [0., 1.])
-        scipy_sdf = -distance_transform_edt(img) + distance_transform_edt(1-img)
-        scipy_sdf /= (s1 // 2)
-        scipy_sdfs.append(scipy_sdf)
-    scipy_sdfs = np.array(scipy_sdfs)
-    np.save("datasets/sdf_scipy_" + file_name + ".npy", scipy_sdfs)
-
-
-if __name__ == "__main__":
-    to_scipy_sdf("all128")
