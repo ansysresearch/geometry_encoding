@@ -2,6 +2,7 @@ from data.sympy_helper import *
 from data.utils import plot_sdf
 from sympy import Symbol, Array
 from sympy.utilities.lambdify import lambdify
+from scipy.ndimage import distance_transform_edt
 
 
 class Geom:
@@ -255,13 +256,13 @@ def compute_sdf_from_img1(img):
     sdf = sdf / (img.shape[0] / 2)
     return sdf
 
+
 def compute_sdf_from_img2(img):
     assert np.ndim(img) == 2
     assert img.shape[0] == img.shape[1]
-
-    img2 = np.ones_like(img) * 4
-    img2 = img[:, :-1] + img[:, 1:] + img[:-1, :] + img[1:, :]
-    border = img
+    scipy_sdf = -distance_transform_edt(img) + distance_transform_edt(1 - img)
+    scipy_sdf /= (img.shape[0] // 2)
+    return scipy_sdf
 
 
 def merge_geoms(geoms, x, y):
@@ -275,46 +276,29 @@ if __name__ == "__main__":
     EPS = 1e-2
     Nx, Ny = 200, 200
     x, y = np.meshgrid(np.linspace(-1, 1, Nx), np.linspace(-1, 1, Ny))
-    # geoms = [Circle(0.5),
-    #          Circle(0.5).translate((0.5, 0.2)).scale(0.3),
-    #          nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]),
-    #          nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]).translate((0.4, .3)).rotate(1.),
-    #          Rectangle([0.2, 0.3]),
-    #          Rectangle([0.2, 0.3]).translate((0.7, 0.7)),
-    #          Diamond([0.2, 0.3]).scale(1.5),
-    #          CrossX([0.5, 0.1]),
-    #          nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]),
-    #          ]
+    geoms = [Circle(0.5),
+             Circle(0.5).translate((0.5, 0.2)).scale(0.3),
+             nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]),
+             nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]).translate((0.4, .3)).rotate(1.),
+             Rectangle([0.2, 0.3]),
+             Rectangle([0.2, 0.3]).translate((0.7, 0.7)),
+             Diamond([0.2, 0.3]).scale(1.5),
+             CrossX([0.5, 0.1]),
+             nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]),
+             ]
     # for g in geoms:
     #     g.plot_sdf(x, y, plot_eikonal=True)
 
     geom1 = Rectangle([0.5, 0.2])
-    sdf1 = geom1.eval_sdf(x, y)
-    img1 = sdf1 < 0
-
-    plot_sdf(img1, sdf1, plot_eikonal=True, show=False)
-    sdf1_check = compute_sdf_from_img(img1)
-    img1_check = sdf1_check < 0
-    plot_sdf(img1_check, sdf1_check, plot_eikonal=True)
-
-    geom2 = nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]])
+    geom2 = nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.75]])
     geom3 = geom2.copy().rotate(0.3).translate((0.3, 0.2))
-    geoms = [geom1, geom3]
+    geoms = [geom1, geom2, geom3]
     for g in geoms:
         sdf = g.eval_sdf(x, y)
         img = sdf < 0
         plot_sdf(img, sdf, plot_eikonal=True, show=False)
 
-    geom4 = geom1.union(geom3)
+    geom4 = geom1.union(geom3).union(geom2)
     sdf4 = geom4.eval_sdf(x, y)
     img4 = sdf4 < 0
-    plot_sdf(img4, sdf4, plot_eikonal=True, show=False)
-
-    img5, sdf5 = merge_geoms(geoms, x, y)
-    plot_sdf(img5, sdf5, plot_eikonal=True, show=False)
-
-    sdf6 = compute_sdf_from_img(img5)
-    plot_sdf(img5, sdf6, plot_eikonal=True)
-
-    import matplotlib.pyplot as plt
-    print(np.any(abs(sdf4 - sdf5) > 1e-6))
+    plot_sdf(img4, sdf4, plot_eikonal=True, show=True)

@@ -1,8 +1,7 @@
-import tqdm
-import itertools
-from scipy.optimize import fsolve
-from scipy.ndimage import center_of_mass
 from data.geoms import *
+from params import DATA_FOLDER
+
+data_folder = DATA_FOLDER
 
 
 def generate_one_geometry(obj_list, xmax=0.8, ymax=0.8):
@@ -37,7 +36,7 @@ def generate_one_geometry(obj_list, xmax=0.8, ymax=0.8):
     return geom
 
 
-def augment_one_geometry(geom, mode="all"):
+def augment_geometry_1(geom, mode="all"):
     if mode == "all":
         mode = np.random.choice(["rotate", "translate", "scale"])
 
@@ -55,19 +54,37 @@ def augment_one_geometry(geom, mode="all"):
         raise(ValueError("Mode %s is not recognized"%mode))
 
 
+def augment_geometry_2(sdfs, n_obj=200):
+    idx = np.random.randint(0, len(sdfs), n_obj)
+    r = np.random.random((n_obj, 1, 1)) * 0.1 + 0.1
+    sdfs_with_hole = sdfs[idx, :, :].copy()
+    sdfs_with_hole = abs(sdfs_with_hole) - r
+    sdfs_updated = np.concatenate([sdfs, sdfs_with_hole])
+    return sdfs_updated
+
+
+def augment_geometry_3(sdfs, n_obj=200):
+    idx = np.random.randint(0, len(sdfs), n_obj)
+    r = np.random.random((n_obj, 1, 1)) * 0.05 + 0.05
+    sdfs_rounded = sdfs[idx, :, :].copy()
+    sdfs_rounded = sdfs_rounded - r
+    sdfs_updated = np.concatenate([sdfs, sdfs_rounded])
+    return sdfs_updated
+
+
 def generate_geometries(n_obj=500, n_aug=3, obj_list=("Circle", "Rectangle", "Diamond", "Cross", "nGon")):
 
     print("generating objects")
     geoms = [generate_one_geometry(obj_list) for _ in range(n_obj)]
 
     # geoms is centered at origin. we randomly translate all geoms
-    geoms = [augment_one_geometry(g, mode="translate") for g in geoms]
+    geoms = [augment_geometry_1(g, mode="translate") for g in geoms]
 
     # now produce replicates of geoms with random rotation, scaling or translation
     geoms_aug = []
     print("augmenting with rotation, translation and scaling")
     for _ in range(n_aug):
-        geoms_aug += [augment_one_geometry(g) for g in geoms]
+        geoms_aug += [augment_geometry_1(g) for g in geoms]
     return geoms_aug
 
 
@@ -89,9 +106,10 @@ def combine_geometries(geoms, n1, n2, x, y):
     return combined_geoms, combined_sdf
 
 
-def sample_near_geometry(geoms, n_sample, lb=-0.1, ub=0.1):
+def sample_near_geometry(geoms, n_sample, lb=-np.inf, ub=np.inf):
     sample_pnts = []
-    if n_sample == 0: return sample_pnts
+    if n_sample == 0:
+        return sample_pnts
     while True:
         # generate two long random vectors,
         x = np.random.random(10000) * 2 - 1
@@ -119,7 +137,9 @@ def sample_near_geometry(geoms, n_sample, lb=-0.1, ub=0.1):
 
 
 def filter_sdfs(sdf):
-    if np.mean(sdf < 0) > 0.75: #object is too big
+    if np.mean(sdf < 0) > 0.85: #object is too big
+        return False
+    elif np.mean(sdf < 0) < 0.1: #object is too small
         return False
     elif np.any(np.min(sdf < 0, axis=0)):  #object extends an entire row
         return False
@@ -129,49 +149,96 @@ def filter_sdfs(sdf):
         return True
 
 
-def generate_data(obj_list, img_resolution=100, n_obj=500, save_name="data", plot=False, n_sample=500):
+def generate_data(obj_list, img_resolution=100, n_obj=500, save_name=None):
+    # analytical value of sdf computed in the geoms.py leads to
+    # artifact in the sdf values inside geometries, when they are combined.
+    # this is because boolean operation do not produce a correct sdf, but a only a lowerbound for it.
+    # see https://www.iquilezles.org/www/articles/interiordistance/interiordistance.htm
+
+    # I will use the analytical values of sdf to generate black-white images, then use
+    # two euclidean distance transforms to compute the distance from the boundary.
+
     x, y = np.meshgrid(np.linspace(-1, 1, img_resolution), np.linspace(-1, 1, img_resolution))
     geoms1 = generate_geometries(n_obj=n_obj, obj_list=obj_list)
     sdf1 = [g.eval_sdf(x, y) for g in geoms1]
     geoms2, sdf2 = combine_geometries(geoms1, 2, 2*n_obj, x, y)
     geoms3, sdf3 = combine_geometries(geoms1, 3, 3*n_obj, x, y)
-    sdf = np.array(sdf1 + sdf2 + sdf3)
-    geoms = np.array(geoms1 + geoms2 + geoms3, dtype=object)
+    sdfs = np.array(sdf1 + sdf2 + sdf3)
 
-    mask = [filter_sdfs(s) for s in sdf]
-    sdf = sdf[mask, :, :]
-    geoms = geoms[mask]
+    mask = [filter_sdfs(s) for s in sdfs]
+    sdfs = sdfs[mask, :, :]
 
-    print("save sdf on grids")
-    np.save("data/datasets/img_" + save_name + ".npy", sdf < 0)
-    np.save("data/datasets/sdf_" + save_name + ".npy", sdf)
+    # create objects with holes in them.
+    sdfs = augment_geometry_2(sdfs, n_obj=200)
 
-    # print("sampling points on the boundary")
-    # pnts1 = [sample_near_geometry(geom, int(n_sample*0.2), lb=-0.01, ub=0.01) for geom in geoms]
-    #
-    # print("sampling points near the boundary")
-    # pnts2 = [sample_near_geometry(geom, int(n_sample*0.2), lb=-0.1, ub=0.1) for geom in geoms]
-    #
-    # print("sampling points anywhere else")
-    # pnts3 = [sample_near_geometry(geom, int(n_sample*0.6), lb=-5, ub=5) for geom in geoms]
-    # pnts = np.concatenate([pnts1, pnts2, pnts3], axis=2)
-    print("sample points")
-    pnts = [sample_near_geometry(geom, n_sample, lb=-5, ub=5) for geom in geoms]
+    # create rounded objects.
+    sdfs = augment_geometry_3(sdfs, n_obj=200)
+
+    print("correct sdf")
+    imgs = []
+    scipy_sdfs = []
+    for sdf in sdfs:
+        img = sdf < 0
+        imgs.append(img)
+        scipy_sdf = -distance_transform_edt(img) + distance_transform_edt(1 - img)
+        scipy_sdf /= (sdfs.shape[1] // 2)
+        scipy_sdfs.append(scipy_sdf)
+
+    imgs = np.array(imgs)
+    scipy_sdfs = np.array(scipy_sdfs)
+
+    for idx in np.random.randint(100, 400, 10):
+        plot_sdf(scipy_sdfs[-idx, :, :] < 0, scipy_sdfs[-idx, :, :])
+
+    if save_name:
+        np.save(data_folder + "img_" + save_name + ".npy", imgs)
+        np.save(data_folder + "sdf_" + save_name + ".npy", scipy_sdfs)
+
+    return imgs, scipy_sdfs
+
+
+def generate_offgrid_data(obj_list, img_resolution=100, n_obj=50, n_points=1000, save_name=None):
+    up_factor = 4
+    img_fine_resolution = img_resolution * up_factor
+    imgs, sdfs = generate_data(obj_list, img_resolution=img_fine_resolution, n_obj=n_obj)
+    x = np.linspace(-1, 1, img_fine_resolution)
+    y = np.linspace(-1, 1, img_fine_resolution)
+
+    pnts = []
+    for sdf in sdfs:
+        idx = np.random.randint(0, img_fine_resolution-1, n_points)
+        idy = np.random.randint(0, img_fine_resolution-1, n_points)
+        xi = x[idx]
+        yi = y[idy]
+        sdfi = sdf[idx, idy]
+        pnts.append([xi, yi, sdfi])
+
     pnts = np.array(pnts)
+    if save_name:
+        np.save(data_folder + "pnt_" + save_name + ".npy", pnts)
 
-    print("save sampling points")
-    np.save("data/datasets/pnt_" + save_name + ".npy", pnts)
+    return pnts
 
-    if plot:
-        for idx in np.random.randint(0, sdf.shape[0], 50):
-            sd, sp = sdf[idx, :, :], pnts[idx, :, :]
-            plot_sdf(sd, sd < 0, show=False)
-            plt.plot((sp[0, :] + 1) * sd.shape[1]/2, (sp[1, :] + 1) * sd.shape[0]/2, 'g.')
-            # plt.plot((sp[0, 400:] + 1) * sd.shape[1]/2, (sp[1, 400:] + 1) * sd.shape[0]/2, 'g.')
-            # plt.plot((sp[0, 200:400] + 1) * sd.shape[1]/2, (sp[1, 200:400] + 1) * sd.shape[0]/2, 'b.')
-            # plt.plot((sp[0, :200] + 1) * sd.shape[1]/2, (sp[1, :200] + 1) * sd.shape[0]/2, 'r.')
-            plt.show()
 
+# def generate_data_scipy_method(file_name):
+#     imgs = np.load(data_folder + "img_" + file_name + ".npy")
+#     np.save(data_folder + "img_scipy_" + file_name + ".npy", imgs)
+#
+#     scipy_sdfs = []
+#     for img in imgs:
+#         s1, s2 = img.shape
+#         assert s1 == s2
+#         assert np.all(np.unique(img) == [0., 1.])
+#         scipy_sdf = -distance_transform_edt(img) + distance_transform_edt(1 - img)
+#         scipy_sdf /= (s1 // 2)
+#         scipy_sdfs.append(scipy_sdf)
+#     scipy_sdfs = np.array(scipy_sdfs)
+#     np.save(data_folder + "sdf_scipy_" + file_name + ".npy", scipy_sdfs)
+#
+#     pnts = np.load(data_folder + "pnt_" + file_name + ".npy")
+#     np.save(data_folder + "pnt_scipy_" + file_name + ".npy", pnts)
+#
+# def generate_
 
 if __name__ == "__main__":
 

@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_sdf(img, sdf, xticks=(-1, 1), yticks=(-1, 1), plot_eikonal=False, show=True):
+def plot_sdf(img, sdf, xticks=(-1, 1), yticks=(-1, 1), plot_eikonal=False, show=True, colorbar=False):
     plt.figure(figsize=(10, 10))
     plt.subplot(2, 2, 1)
     plt.imshow(img, cmap='binary')
@@ -13,7 +13,7 @@ def plot_sdf(img, sdf, xticks=(-1, 1), yticks=(-1, 1), plot_eikonal=False, show=
 
     plt.subplot(2, 2, 2)
     plt.imshow(sdf, cmap='hot')
-    #plt.colorbar()
+    if colorbar: plt.colorbar()
     plt.contour(sdf, 30, colors='k')
     plt.gca().invert_yaxis()
     plt.xticks(np.linspace(0, img.shape[0], 5), np.linspace(xticks[0], xticks[1], 5))

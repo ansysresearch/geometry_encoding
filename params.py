@@ -1,7 +1,7 @@
 import torch
 
 # data parameters
-IMAGE_RESOLUTION = 64
+IMAGE_RESOLUTION = 128
 DATA_FOLDER      = "data/datasets/"
 DATASET_ID       = "scipy_all" + str(IMAGE_RESOLUTION)
 

@@ -169,20 +169,3 @@ def plot_interpolation_results(file_name, n=10):
         plt.show()
 
 
-def to_scipy_sdf(file_name):
-    imgs = np.load(data_folder + "img_" + file_name + ".npy")
-    np.save(data_folder + "img_scipy_" + file_name + ".npy", imgs)
-
-    scipy_sdfs = []
-    for img in imgs:
-        s1, s2 = img.shape
-        assert s1 == s2
-        assert np.all(np.unique(img) == [0., 1.])
-        scipy_sdf = -distance_transform_edt(img) + distance_transform_edt(1 - img)
-        scipy_sdf /= (s1 // 2)
-        scipy_sdfs.append(scipy_sdf)
-    scipy_sdfs = np.array(scipy_sdfs)
-    np.save(data_folder + "sdf_scipy_" + file_name + ".npy", scipy_sdfs)
-
-    pnts = np.load(data_folder + "pnt_" + file_name + ".npy")
-    np.save(data_folder + "pnt_scipy_" + file_name + ".npy", pnts)
