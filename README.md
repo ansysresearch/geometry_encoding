@@ -1,9 +1,10 @@
 # Signed Distance Function Prediction
 ![](apple.png)
 
-This repo contains implementation of a neural network system for generating accurate signed distance fields (SDF) for 2D geometry. The geometry is assumed to be a black-white square image where the background pixels are 0 and the object pixels are 1. 
+This repo contains implementation of a neural network system for generating accurate signed distance fields (SDF) for 2D geometries. The geometry is assumed to be a black-white square image where the background pixels are 0 and the object pixels are 1. 
 
 ## Requirements
+see `requirements.txt`
 
 ## Parameters
 All the parameters of the model are stored, and can be changed, in `params.py`. 
