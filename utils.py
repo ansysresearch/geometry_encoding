@@ -1,10 +1,9 @@
 import os
 import sys
+import cv2
 import numpy as np
-from matplotlib.colors import LogNorm
 import matplotlib.pyplot as plt
 from torch.utils.data import TensorDataset
-from scipy.ndimage import distance_transform_edt
 from params import *
 
 data_folder = DATA_FOLDER
@@ -97,6 +96,13 @@ def plot_prediction_results(file_name, show=True, colorbar=False):
         plt.xticks([])
         plt.yticks([])
 
+        plt.text(-0.7, 3.0, "bw image", fontdict={"size": 14}, transform=plt.gca().transAxes)
+        plt.text(-0.7, 1.5, "ground truth", fontdict={"size": 14}, transform=plt.gca().transAxes)
+        plt.text(-0.7, 0.5, "prediction", fontdict={"size": 14}, transform=plt.gca().transAxes)
+        plt.text(2, 3.5, "comparison on horizontal lines", fontdict={"size": 14}, transform=plt.gca().transAxes)
+        plt.text(2, 1.6, "comparison on vertical lines", fontdict={"size": 14}, transform=plt.gca().transAxes)
+        plt.text(1.8, 3.7, "dashed lines = ground truth, solid lines = prediction", fontdict={"size": 14}, transform=plt.gca().transAxes)
+
         plt.subplot(2, 2, 2)
         for plt_idx, clr in zip(sampling_lines, clr_list):
             plt.plot(xx, sdf[plt_idx, :], clr + '--')
@@ -111,61 +117,27 @@ def plot_prediction_results(file_name, show=True, colorbar=False):
             plt.show()
 
 
-def aggregate_interpolation_results(data):
-    errors = []
-    errors_rel = []
-    for img, xp, yp, sdf, sdf_pred in data:
-        error = sdf - sdf_pred
-        error_rel = (sdf - sdf_pred) / (abs(sdf) + 0.01)
-        errors.append(error)
-        errors_rel.append(error_rel)
-    return np.array(errors), np.array(errors_rel)
+def compute_edges_img(img):
+    edge_lower_tresh = 50
+    edge_upper_tresh = 200
+    running_img = img.copy()
+    running_img *= 255
+    running_img = running_img.astype(np.uint8)
+    edges = cv2.Canny(running_img, edge_lower_tresh, edge_upper_tresh)
+    return edges
 
 
-def plot_interpolation_results(file_name, n=10):
-    data = np.load(file_name, allow_pickle=True)
+def compute_perimeter_img(img):
+    edges = compute_edges_img(img)
+    perimeter = np.sum(edges) / (img.shape[0] * 2 * 255)
+    return perimeter
 
-    er, er_rel = aggregate_interpolation_results(data)
-    er_m = er.mean(axis=1)
-    plt.plot(np.arange(len(er_m)), er_m, 'b.--')
-    plt.gca().fill_between(np.arange(len(er_m)), er_m - er.std(axis=1), er_m + er.std(axis=1), color='b', alpha=.1)
-    plt.xticks([], [])
-    plt.title("average error for 500 geometries \n computed over 600 randomly sampled points")
-    plt.xlabel("geometries")
-    plt.ylabel("sdf - predicted sdf")
-    plt.ylim(-0.03, 0.03)
-    plt.show()
 
-    er_rel_m = er_rel.mean(axis=1)
-    plt.plot(np.arange(len(er_rel_m)), er_rel_m, 'b.--')
-    plt.gca().fill_between(np.arange(len(er_rel_m)), er_rel_m - er_rel.std(axis=1), er_rel_m + er_rel.std(axis=1),
-                           color='b', alpha=.1)
-    plt.xticks([], [])
-    plt.title("average relative error for 500 geometries \n computed over 600 randomly sampled points")
-    plt.xlabel("geometries")
-    plt.ylabel("(sdf - predicted sdf)/ (abs(sdf) + 0.01)")
-    plt.ylim(-0.1, 0.1)
-
-    for idx in np.random.randint(0, data.shape[0], n):
-        img, xp, yp, sdf, sdf_pred = data[idx]
-        img = img.squeeze()
-
-        err = sdf - sdf_pred
-        err_rel = np.minimum(1, err / (abs(sdf) + 0.01))
-        err_log = np.log10(abs(err))
-        err_rel_log = np.log10(abs(err_rel))
-        plt.subplot(2, 2, 1)
-        plt.imshow(img, cmap="binary")
-        plt.xticks(np.linspace(0, img.shape[0], 5), np.linspace(-1, 1, 5))
-        plt.yticks(np.linspace(0, img.shape[1], 5), np.linspace(-1, 1, 5))
-        plt.gca().invert_yaxis()
-        plt.scatter((xp + 1) * img.shape[0] / 2, (yp + 1) * img.shape[1] / 2, c=err, s=10, norm=LogNorm())
-        plt.colorbar()
-
-        plt.subplot(2, 2, 2)
-        plt.hist(err_log, bins=np.linspace(-10, 0, 20), weights=np.ones_like(sdf)/sdf.shape[0])
-        plt.xlabel("log(error)")
-        plt.ylabel("frequency ratio")
-        plt.show()
+# from scipy.spatial.distance import cdist
+# def compute_sharpest_angle_img(img):
+#     edges = compute_edges_img(img)
+#     edges_pixels = np.array(np.where(edges == 255))
+#     dist_mat  = cdist(edges_pixels, edges_pixels)
+#     closest_pixels_idx = np.argmin(cdist)
 
 

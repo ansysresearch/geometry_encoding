@@ -1,12 +1,13 @@
 import torch
 
 # data parameters
+NUMBER_OBJECTS = 500
 IMAGE_RESOLUTION = 128
 DATA_FOLDER      = "data/datasets/"
-DATASET_ID       = "scipy_all" + str(IMAGE_RESOLUTION)
+DATASET_ID       = "all" + str(IMAGE_RESOLUTION)
 
 # training parameters
-NETWORK_ID                     = "UNet64"
+NETWORK_ID                     = "UNet1"  # see network/network_lib.py for more details.
 NUM_EPOCHS                     = 100
 SAVE_EVERY                     = 20
 BATCH_SIZE                     = 50
@@ -22,5 +23,5 @@ NETWORK_SAVE_DIRECTORY         = CHECKPOINTS_DIRECTORY + "networks/"
 RUNS_SAVE_DIRECTORY            = CHECKPOINTS_DIRECTORY + "runs/"
 
 # prediction parameters
-COMPUTE_PREDICTIONS_NUM   = 5
+COMPUTE_PREDICTIONS_NUM   = 10
 PREDICTION_SAVE_DIRECTORY = CHECKPOINTS_DIRECTORY + "predictions/"
