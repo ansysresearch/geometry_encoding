@@ -9,6 +9,21 @@ from network.network_components import *
 # UNet3 has a code with quarter of the size of input.
 
 
+class CNN1(nn.Module):
+    def __init__(self, n_channels, n_classes):
+        super().__init__()
+
+        self.inconv1 = DoubleConv(n_channels, 128, 128)
+        self.inconv2 = DoubleConv(128, 128, 128)
+        self.outconv = OutConv(128, n_classes)
+
+    def forward(self, x):
+        x1 = self.inconv1(x)
+        x2 = self.inconv2(x1)
+        xo = self.outconv(x2)
+        return xo
+
+
 class UNet1(nn.Module):
     def __init__(self, n_channels, n_classes):
         super().__init__()
@@ -103,6 +118,8 @@ def get_network(network_id):
         return UNet2(n_channels=1, n_classes=1)
     elif network_id == "UNet3":
         return UNet3(n_channels=1, n_classes=1)
+    if network_id == "CNN1":
+        return CNN1(n_channels=1, n_classes=1)
     else:
         raise(IOError("Network ID is not recognized."))
 

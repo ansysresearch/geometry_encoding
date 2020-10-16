@@ -7,10 +7,10 @@ DATA_FOLDER      = "data/datasets/"
 DATASET_ID       = "all" + str(IMAGE_RESOLUTION)
 
 # training parameters
-NETWORK_ID                     = "UNet1"  # see network/network_lib.py for more details.
+NETWORK_ID                     = "CNN1"  # see network/network_lib.py for more details.
 NUM_EPOCHS                     = 100
 SAVE_EVERY                     = 20
-BATCH_SIZE                     = 50
+BATCH_SIZE                     = 10
 DATA_TYPE                      = torch.float32
 LEARNING_RATE                  = 5e-4
 NETWORK_SAVE_NAME              = NETWORK_ID + "_" + DATASET_ID
