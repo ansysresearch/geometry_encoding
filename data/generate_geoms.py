@@ -1,7 +1,5 @@
-from data.geoms import *
-from params import DATA_FOLDER
-
-data_folder = DATA_FOLDER
+import numpy as np
+from data.geoms import Circle, nGon, Rectangle, Diamond, CrossX
 
 
 def generate_one_geometry(obj_list, xmax=0.8, ymax=0.8):
@@ -148,70 +146,6 @@ def filter_sdfs(sdf):
         return True
 
 
-def generate_data(obj_list, img_resolution=100, n_obj=500, save_name=None):
-    """
-    to generate dataset from a given list of 2d objects.
-
-    :param obj_list: list of objects to generate data
-    :param img_resolution: resolution of each geometry
-    :param n_obj: number of object in the initial pool of geometry.
-                  final number is roughly 10x this number after augmentation
-    :param save_name: if not None, the data will be saved.
-    """
-
-    # grid coordiantes
-    x, y = np.meshgrid(np.linspace(-1, 1, img_resolution), np.linspace(-1, 1, img_resolution))
-
-    # generate all geometries, and their sdfs
-    geoms1 = generate_geometries(n_obj=n_obj, obj_list=obj_list)
-    sdf1 = [g.eval_sdf(x, y) for g in geoms1]
-
-    # create geometries that are composed of two or three objects, compute their sdf
-    geoms2, sdf2 = combine_geometries(geoms1, 2, 2*n_obj, x, y)
-    geoms3, sdf3 = combine_geometries(geoms1, 3, 3*n_obj, x, y)
-    sdfs = np.array(sdf1 + sdf2 + sdf3)
-
-    # filter some strange looking geometries.
-    mask = [filter_sdfs(s) for s in sdfs]
-    sdfs = sdfs[mask, :, :]
-
-    # create geometries with holes in them.
-    sdfs = augment_geometry_2(sdfs, n_obj=int(0.5*n_obj))
-
-    # create rounded geometries.
-    sdfs = augment_geometry_3(sdfs, n_obj=int(0.5*n_obj))
-
-    # note that analytical value of sdf computed in the geoms.py leads to
-    # artifact in the sdf values inside geometries, when they are combined.
-    # this is because boolean operation do not produce a correct sdf, but only a lowerbound for it.
-    # see https://www.iquilezles.org/www/articles/interiordistance/interiordistance.htm
-    #
-    # I will use the analytical values of sdf to generate black-white images, then use
-    # two euclidean distance transforms to compute the signed distance function.
-
-    imgs = []
-    scipy_sdfs = []
-    for sdf in sdfs:
-        img = sdf < 0
-        imgs.append(img)
-        scipy_sdf = -distance_transform_edt(img) + distance_transform_edt(1 - img)
-        scipy_sdf /= (sdfs.shape[1] // 2)
-        scipy_sdfs.append(scipy_sdf)
-
-    imgs = np.array(imgs)
-    scipy_sdfs = np.array(scipy_sdfs)
-
-    # uncomment if you want to see some of the generated img,sdf pairs
-    # for idx in np.random.randint(0, n_obj*8, 10):
-    #     plot_sdf(scipy_sdfs[-idx, :, :] < 0, scipy_sdfs[-idx, :, :])
-
-    if save_name:
-        np.save(data_folder + "img_" + save_name + ".npy", imgs)
-        np.save(data_folder + "sdf_" + save_name + ".npy", scipy_sdfs)
-
-    return imgs, scipy_sdfs
-
-
 # def generate_offgrid_data(obj_list, img_resolution=100, n_obj=50, n_points=1000, save_name=None):
 #     up_factor = 4
 #     img_fine_resolution = img_resolution * up_factor
@@ -252,20 +186,7 @@ def generate_data(obj_list, img_resolution=100, n_obj=500, save_name=None):
 #
 #     pnts = np.load(data_folder + "pnt_" + file_name + ".npy")
 #     np.save(data_folder + "pnt_scipy_" + file_name + ".npy", pnts)
-#
-# def generate_
 
-if __name__ == "__main__":
-
-    g1 = CrossX((0.6, 0.1)).rotate(0.2)
-    g2 = Circle(0.5).translate((0.4, -0.3))
-    g3 = Diamond((0.6, 0.2)).rotate(0.3).translate((-0.3, -0.3))
-    g4 = nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]).rotate(0.3).translate((-0.5, 0.8))
-    x, y = np.meshgrid(np.linspace(-1, 1, 100), np.linspace(-1, 1, 100))
-    sdf = np.min([g.eval_sdf(x, y) for g in [g1, g3, g2, g4]], axis=0)
-    plot_sdf(sdf < 0, sdf)
-
-    generate_data(["Circle", "nGon", "Rectangle"], img_resolution=100, n_obj=5, save_name="data")
 
 
 

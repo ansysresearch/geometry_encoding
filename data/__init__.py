@@ -1,1 +1,2 @@
-from .generate_geoms import generate_data
+from data.generate_geoms import *
+

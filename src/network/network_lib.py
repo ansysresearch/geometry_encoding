@@ -1,5 +1,5 @@
 from math import log2
-from network.network_components import *
+from src.network.network_components import *
 
 # all networks have a U-Net structure.
 # the original template can be found in https://github.com/milesial/Pytorch-UNet/tree/master/unet
