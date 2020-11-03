@@ -1,14 +1,17 @@
+import torch
 import numpy as np
 from network import get_network
-from params import *
+from params import parse_arguments
 
-dtype      = DATA_TYPE
-network_id = NETWORK_ID
-dataset_id = "data/exotic_shapes/exotic_shapes" + str(IMAGE_RESOLUTION) + ".npy"
-save_name  = NETWORK_SAVE_NAME
-n_prediction   = COMPUTE_PREDICTIONS_NUM
-network_save_dir = NETWORK_SAVE_DIRECTORY
-prediction_save_dir = PREDICTION_SAVE_DIRECTORY
+args = parse_arguments()
+dtype               = torch.float32 if args.dtype == "float32" else torch.float64
+network_id          = args.net_id
+dataset_id          = "data/exotic_shapes/exotic_shapes" + str(args.img_res) + ".npy"
+save_name           = args.network_id + '_' + args.dataset_id
+n_prediction        = args.n_pred
+checkpoint_dir      = args.ckpt_dir
+network_save_dir    = checkpoint_dir + 'networks/'
+prediction_save_dir = checkpoint_dir + 'predictions/'
 
 device = 'cpu'
 net = get_network(network_id=network_id).to(device=device, dtype=dtype)
