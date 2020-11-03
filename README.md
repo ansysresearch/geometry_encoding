@@ -15,6 +15,7 @@ see `requirements.txt`
  - `test`: to test the model
  - `test exotic`: to test the model on the exotic dataset; see `datasets/exotic_shapes/png_images` 
  - `visualize`: to visualize the model
+ 
 Optional parameters include:
  - `--n-obj`: initial number of objects for training. multiplied 9x after augmentation, default=`500`
  - `--img-res`: image resolution, default=`128`
