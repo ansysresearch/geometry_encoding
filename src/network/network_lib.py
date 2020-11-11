@@ -24,6 +24,36 @@ class CNN1(nn.Module):
         return xo
 
 
+class UNet0(nn.Module):
+    def __init__(self, n_channels, n_classes):
+        super().__init__()
+
+        self.inconv0 = DoubleConv(n_channels, 64, 64)
+        self.inconv1 = DoubleConv(n_channels, 64, 128)
+        self.inconv2 = DoubleConv(n_channels, 128, 128)
+        self.inconv3 = DoubleConv(n_channels, 128, 256)
+        self.inconv4 = DoubleConv(n_channels, 256, 256)
+
+        self.inconv5 = DoubleConv(n_channels, 512, 256)
+        self.inconv6 = DoubleConv(n_channels, 384, 128)
+        self.inconv7 = DoubleConv(n_channels, 256, 128)
+        self.inconv8 = DoubleConv(n_channels, 192, 64)
+
+        self.outconv = OutConv(64, n_classes)
+
+    def forward(self, x):
+        x1 = self.inconv0(x)
+        x2 = self.inconv1(x1)
+        x3 = self.inconv2(x2)
+        x4 = self.inconv3(x3)
+        x5 = self.inconv4(x4)
+        x = self.inconv5(x5, x4)
+        x = self.inconv6(x, x3)
+        x = self.inconv7(x, x2)
+        x = self.inconv8(x, x1)
+        x = self.outconv(x)
+        return x
+
 class UNet1(nn.Module):
     def __init__(self, n_channels, n_classes):
         super().__init__()
@@ -112,7 +142,9 @@ class UNet3(nn.Module):
 
 
 def get_network(network_id):
-    if network_id == "UNet1":
+    if network_id == "UNet0":
+        return UNet0(n_channels=1, n_classes=1)
+    elif network_id == "UNet1":
         return UNet1(n_channels=1, n_classes=1)
     elif network_id == "UNet2":
         return UNet2(n_channels=1, n_classes=1)

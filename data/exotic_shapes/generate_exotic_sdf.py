@@ -64,4 +64,4 @@ def generate_exotic_sdf(size=100, plot=False):
 
 
 if __name__ == "__main__":
-    generate_exotic_sdf(size=256, plot=True)
+    generate_exotic_sdf(size=128, plot=True)
