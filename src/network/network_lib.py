@@ -29,15 +29,15 @@ class UNet0(nn.Module):
         super().__init__()
 
         self.inconv0 = DoubleConv(n_channels, 64, 64)
-        self.inconv1 = DoubleConv(n_channels, 64, 128)
-        self.inconv2 = DoubleConv(n_channels, 128, 128)
-        self.inconv3 = DoubleConv(n_channels, 128, 256)
-        self.inconv4 = DoubleConv(n_channels, 256, 256)
+        self.inconv1 = DoubleConv(64, 64, 128)
+        self.inconv2 = DoubleConv(128, 128, 128)
+        self.inconv3 = DoubleConv(128, 128, 256)
+        self.inconv4 = DoubleConv(256, 256, 256)
 
-        self.inconv5 = DoubleConv(n_channels, 512, 256)
-        self.inconv6 = DoubleConv(n_channels, 384, 128)
-        self.inconv7 = DoubleConv(n_channels, 256, 128)
-        self.inconv8 = DoubleConv(n_channels, 192, 64)
+        self.inconv5 = DoubleConv(512, 256, 256)
+        self.inconv6 = DoubleConv(384, 192, 128)
+        self.inconv7 = DoubleConv(256, 128, 128)
+        self.inconv8 = DoubleConv(192, 96, 64)
 
         self.outconv = OutConv(64, n_classes)
 
@@ -47,12 +47,13 @@ class UNet0(nn.Module):
         x3 = self.inconv2(x2)
         x4 = self.inconv3(x3)
         x5 = self.inconv4(x4)
-        x = self.inconv5(x5, x4)
-        x = self.inconv6(x, x3)
-        x = self.inconv7(x, x2)
-        x = self.inconv8(x, x1)
+        x = self.inconv5(torch.cat([x4, x5], dim=1))
+        x = self.inconv6(torch.cat([x3, x], dim=1))
+        x = self.inconv7(torch.cat([x2, x], dim=1))
+        x = self.inconv8(torch.cat([x1, x], dim=1))
         x = self.outconv(x)
         return x
+
 
 class UNet1(nn.Module):
     def __init__(self, n_channels, n_classes):
