@@ -1,5 +1,8 @@
+import copy
 import numpy as np
+
 from data.geoms import Circle, nGon, Rectangle, Diamond, CrossX
+from data.geoms3 import Sphere, Ellipsoid, Capsule, Cylinder, Box, RoundedBox, HollowBox, Torus, Octahedron
 
 
 def generate_one_geometry(obj_list, xmax=0.8, ymax=0.8):
@@ -25,48 +28,108 @@ def generate_one_geometry(obj_list, xmax=0.8, ymax=0.8):
         geom = Diamond([rx, ry])
     elif obj_id == "CrossX":
         w = max(0.2, np.random.random() * xmax)
-        r = max(0.2, np.random.random() * xmax*0.3)
+        r = max(0.2, np.random.random() * xmax * 0.3)
         geom = CrossX([w, r])
+    elif obj_id == "Sphere":
+        r = max(0.2, np.random.random() * xmax)
+        geom = Sphere(r)
+    elif obj_id == "Ellipsoid":
+        r1 = max(0.2, np.random.random() * xmax)
+        r2 = max(0.2, np.random.random() * xmax)
+        geom = Ellipsoid([r1, r2])
+    elif obj_id == "Capsule":
+        w = max(0.2, np.random.random() * xmax)
+        l = max(0.2, np.random.random() * xmax)
+        d = max(0.2, np.random.random() * xmax)
+        r = max(0.2, np.random.random() * xmax * 0.3)
+        geom = Capsule([-w, -l, -d, w, l, d, r])
+    elif obj_id == "Cylinder":
+        h = max(0.2, np.random.random() * xmax)
+        r = max(0.2, np.random.random() * xmax)
+        geom = Cylinder([h, r])
+    elif obj_id == "Box":
+        w = max(0.2, np.random.random() * xmax)
+        l = max(0.2, np.random.random() * xmax)
+        d = max(0.2, np.random.random() * xmax)
+        geom = Box([w, l, d])
+    elif obj_id == "RoundedBox":
+        w = max(0.2, np.random.random() * xmax)
+        l = max(0.2, np.random.random() * xmax)
+        d = max(0.2, np.random.random() * xmax)
+        r = min([w/2, l/2, d/2, max(0.2, np.random.random() * xmax * 0.3)])
+        geom = RoundedBox([w, l, d, r])
+    elif obj_id == "HollowBox":
+        w = max(0.2, np.random.random() * xmax)
+        l = max(0.2, np.random.random() * xmax)
+        d = max(0.2, np.random.random() * xmax)
+        e = min([w/2, l/2, d/2, max(0.2, np.random.random() * xmax * 0.3)])
+        geom = HollowBox([w, l, d, e])
+    elif obj_id == "Torus":
+        w = max(0.2, np.random.random() * xmax)
+        l = max(0.2, np.random.random() * xmax)
+        l = min(w, l)
+        geom = Torus([w, l])
+    elif obj_id == "Octahedron":
+        a = max(0.2, np.random.random() * xmax)
+        geom = Octahedron([a])
     else:
         print(obj_id)
-        raise("object %s is not yet implemented" % obj_id)
+        raise("object %s is not yet implemented" % str(obj_id))
     return geom
 
 
-def augment_geometry_1(geom, mode="all"):
+def augment_geometry(geom, mode="all"):
     if mode == "all":
-        mode = np.random.choice(["rotate", "translate", "scale"])
+        mode = np.random.choice(["rotate", "translate", "scale", "elongate", "onion", "roundify"])
 
     if mode == "rotate":
         th = np.random.random() * np.pi * 2
-        return geom.copy().rotate(th)
+        if hasattr(geom, 'z'):
+            plane = np.random.choice(['xy', 'xz', 'yz'])
+            return geom.copy().rotate(th, plane=plane)
+        else:
+            return geom.copy().rotate(th)
     elif mode == "translate":
         t1 = np.random.random() - 0.5
         t2 = np.random.random() - 0.5
-        return geom.copy().translate((t1, t2))
+        if hasattr(geom, 'z'):
+            t3 = np.random.random() - 0.5
+            return geom.copy().tranlate((t1, t2, t3))
+        else:
+            return geom.copy().translate((t1, t2))
     elif mode == "scale":
         s = np.random.random() * 1.5 + 0.5
         return geom.copy().scale(s)
+    elif mode == "elongate":
+        elong_fact = np.random.random() * 0.8 + 1.1
+        elong_axis = np.random.choice(["x", "y", "z"])
+        return geom.copy().elongate(elong_fact, along=elong_axis)
+    elif mode == "roundify":
+        r = np.random.random() * 0.2 + 0.1
+        return geom.copy().roundify(r)
+    elif mode == "onion":
+        th = np.random.random() * 0.4 + 0.1
+        return geom.copy().onion(th)
     else:
         raise(ValueError("Mode %s is not recognized"%mode))
 
 
-def augment_geometry_2(sdfs, n_obj=200):
-    idx = np.random.randint(0, len(sdfs), n_obj)
-    r = np.random.random((n_obj, 1, 1)) * 0.1 + 0.1
-    sdfs_with_hole = sdfs[idx, :, :].copy()
-    sdfs_with_hole = abs(sdfs_with_hole) - r
-    sdfs_updated = np.concatenate([sdfs, sdfs_with_hole])
-    return sdfs_updated
-
-
-def augment_geometry_3(sdfs, n_obj=200):
-    idx = np.random.randint(0, len(sdfs), n_obj)
-    r = np.random.random((n_obj, 1, 1)) * 0.05 + 0.05
-    sdfs_rounded = sdfs[idx, :, :].copy()
-    sdfs_rounded = sdfs_rounded - r
-    sdfs_updated = np.concatenate([sdfs, sdfs_rounded])
-    return sdfs_updated
+# def augment_geometry_2(sdfs, n_obj=200):
+#     idx = np.random.randint(0, len(sdfs), n_obj)
+#     r = np.random.random((n_obj, 1, 1)) * 0.1 + 0.1
+#     sdfs_with_hole = sdfs[idx, :, :].copy()
+#     sdfs_with_hole = abs(sdfs_with_hole) - r
+#     sdfs_updated = np.concatenate([sdfs, sdfs_with_hole])
+#     return sdfs_updated
+# 
+# 
+# def augment_geometry_3(sdfs, n_obj=200):
+#     idx = np.random.randint(0, len(sdfs), n_obj)
+#     r = np.random.random((n_obj, 1, 1)) * 0.05 + 0.05
+#     sdfs_rounded = sdfs[idx, :, :].copy()
+#     sdfs_rounded = sdfs_rounded - r
+#     sdfs_updated = np.concatenate([sdfs, sdfs_rounded])
+#     return sdfs_updated
 
 
 def generate_geometries(n_obj=500, n_aug=3, obj_list=("Circle", "Rectangle", "Diamond", "Cross", "nGon")):
@@ -75,14 +138,13 @@ def generate_geometries(n_obj=500, n_aug=3, obj_list=("Circle", "Rectangle", "Di
     geoms = [generate_one_geometry(obj_list) for _ in range(n_obj)]
 
     # geoms is centered at origin. we randomly translate all geoms
-    geoms = [augment_geometry_1(g, mode="translate") for g in geoms]
+    geoms = [augment_geometry(g, mode="translate") for g in geoms]
+    geoms_all = copy.deepcopy(geoms)
 
     # now produce replicates of geoms with random rotation, scaling or translation
-    geoms_aug = []
-    print("augmenting with rotation, translation and scaling")
     for _ in range(n_aug):
-        geoms_aug += [augment_geometry_1(g) for g in geoms]
-    return geoms_aug
+        geoms_all += [augment_geometry(g) for g in geoms]
+    return geoms_all
 
 
 def combine_geometries(geoms, n1, n2, x, y):

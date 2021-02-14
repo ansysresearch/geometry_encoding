@@ -56,4 +56,3 @@ def plot_ply(ply):
         mlab.triangular_mesh(x, y, z, triangles,
                              color=(1, 0, 0.4), opacity=0.5)
     mlab.show()
-

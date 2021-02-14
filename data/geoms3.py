@@ -1,7 +1,9 @@
-import plyfile
+# import plyfile
+# from data.utils import plot_ply
+import meshio
+import pyvista
 import skimage.measure
 from data.sympy_helper import *
-from data.utils import plot_ply
 from data.geoms import Geom
 from sympy import Symbol, Array
 from sympy.utilities.lambdify import lambdify
@@ -81,8 +83,24 @@ class Geom3(Geom):
             self.sdf = self.sdf.subs(sub_dict_2)
             sub_dict_3 = {w: self.y}
             self.sdf = self.sdf.subs(sub_dict_3)
+        elif plane == "xz":
+            w = Symbol('w')
+            sub_dict_1 = {self.x: np.cos(th) * self.x + np.sin(th) * w}
+            self.sdf = self.sdf.subs(sub_dict_1)
+            sub_dict_2 = {self.z: -np.sin(th) * self.x + np.cos(th) * self.z}
+            self.sdf = self.sdf.subs(sub_dict_2)
+            sub_dict_3 = {w: self.z}
+            self.sdf = self.sdf.subs(sub_dict_3)
+        elif plane == "yz":
+            w = Symbol('w')
+            sub_dict_1 = {self.y: np.cos(th) * self.y + np.sin(th) * w}
+            self.sdf = self.sdf.subs(sub_dict_1)
+            sub_dict_2 = {self.z: -np.sin(th) * self.y + np.cos(th) * self.z}
+            self.sdf = self.sdf.subs(sub_dict_2)
+            sub_dict_3 = {w: self.z}
+            self.sdf = self.sdf.subs(sub_dict_3)
         else:
-            raise(NotImplementedError("Other rotation planes are yet to be implemented"))
+            raise(ValueError("rotation planes are `xy`, `xz` or `yz`."))
         return self
 
     def scale(self, s):
@@ -105,24 +123,16 @@ class Geom3(Geom):
         :along : axis of alongation
         :return: elongated object
         """
-        if along == "x":
-            sub_dict = {self.x: self.x - Min(Max(self.x, -h), h)}
-        elif along == "y":
-            sub_dict = {self.y: self.y - Min(Max(self.y, -h), h)}
-        elif along == "z":
-            sub_dict = {self.z: self.z - Min(Max(self.z, -h), h)}
+        if along == "x" or along == "y":
+            self.sdf = super().elongate(h, along=along)
         else:
-            raise(ValueError("axis %s is not recognized, Axes are x, y, z. " % along))
-        self.sdf = self.sdf.subs(sub_dict)
+            if along == "z":
+                sub_dict = {self.z: self.z - Min(Max(self.z, -h), h)}
+            else:
+                raise(ValueError("axis %s is not recognized, Axes are x, y, z. " % along))
+            self.sdf = self.sdf.subs(sub_dict)
         return self
 
-    def roundify(self, r):
-        self.sdf -= r
-        return self
-
-    def onion(self, th):
-        self.sdf = abs(self.sdf) - th
-        return self
 
     def plot_sdf(self, x, y, xticks=(-1, 1), yticks=(-1, 1), plot_eikonal=False):
         raise(NameError(
@@ -130,59 +140,70 @@ class Geom3(Geom):
                use plot_sdf_3d or plot_3d_from_sdf for 3d geometries."""
         ))
 
-    def plot_sdf_3d(self, x, y, z):
-        x_, y_, z_ = np.meshgrid(x, y, z)
+    def plot_sdf_3d(self, res=128):
+        x_ = np.linspace(-1., 1., res)
+        x_, y_, z_ = np.meshgrid(x_, x_, x_)
         sdf = self.eval_sdf(x_, y_, z_)
-        Axes3D.plot_trisurf(x, y, z, c=sdf)
-        raise(NotImplementedError("Not yet implemented."))
-
-    def plot_3d_from_sdf(self, x, y, z):
-        """
-        Convert sdf samples to .ply file, taken from Siren github
-        https://github.com/vsitzmann/siren/blob/master/sdf_meshing.py
-
-        :param x: x-coordinate, np.array
-        :param y: y-coordinate, np.array
-        :param z: z-coordinate. np.array
-        """
-        assert len(x) == len(y) == len(z), "only uniform voxels are supported right now."
-        sdf = self.eval_sdf(x, y, z)
         assert np.any(sdf > 0), "sdf is all -ve, no objects found"
         assert np.any(sdf < 0), "sdf is all +ve, no objects found"
-
-        voxel_size = 2 / len(x)
-        voxel_grid_origin = (-1, -1, -1)
-
-        verts, faces, normals, values = np.zeros((0, 3)), np.zeros((0, 3)), np.zeros((0, 3)), np.zeros(0)
         try:
-            verts, faces, normals, values = skimage.measure.marching_cubes(sdf, level=0.0, spacing=[voxel_size] * 3)
+            verts, faces, normals, values = skimage.measure.marching_cubes(sdf, level=0.0, spacing=[2 / res] * 3)
         except:
-            raise(BrokenPipeError("marching_cubes did not work."))
+            raise (BrokenPipeError("marching_cubes did not work."))
+        vtk_mesh = meshio.Mesh(points=verts, cells=[('triangle', faces)])
+        pyvista.plot(vtk_mesh)
 
+    # def plot_3d_from_sdf(self, x, y, z):
+    #     """
+    #     Convert sdf samples to .ply file, taken from Siren github
+    #     https://github.com/vsitzmann/siren/blob/master/sdf_meshing.py
+    #
+    #     :param x: x-coordinate, np.array
+    #     :param y: y-coordinate, np.array
+    #     :param z: z-coordinate. np.array
+    #     """
+        # assert len(x) == len(y) == len(z), "only uniform voxels are supported right now."
+        # sdf = self.eval_sdf(x, y, z)
+        # assert np.any(sdf > 0), "sdf is all -ve, no objects found"
+        # assert np.any(sdf < 0), "sdf is all +ve, no objects found"
+        #
+        #
+        #
+        # vtk_mesh = meshio.Mesh(points=verts, cells=[('triangle', faces)])
+        # pyvista.plot(vtk_mesh)
         # transform from voxel coordinates to camera coordinates
         # note x and y are flipped in the output of marching_cubes
-        mesh_points = np.zeros_like(verts)
-        mesh_points[:, 0] = voxel_grid_origin[0] + verts[:, 0]
-        mesh_points[:, 1] = voxel_grid_origin[1] + verts[:, 1]
-        mesh_points[:, 2] = voxel_grid_origin[2] + verts[:, 2]
+        # voxel_size = 2 / len(x)
+        # voxel_grid_origin = (-1, -1, -1)
 
-        # try writing to the ply file
-        num_verts = verts.shape[0]
-        num_faces = faces.shape[0]
-        verts_tuple = np.zeros((num_verts,), dtype=[("x", "f4"), ("y", "f4"), ("z", "f4")])
-        for i in range(0, num_verts):
-            verts_tuple[i] = tuple(mesh_points[i, :])
-
-        faces_building = []
-        for i in range(0, num_faces):
-            faces_building.append(((faces[i, :].tolist(),)))
-        faces_tuple = np.array(faces_building, dtype=[("vertex_indices", "i4", (3,))])
-
-        el_verts = plyfile.PlyElement.describe(verts_tuple, "vertex")
-        el_faces = plyfile.PlyElement.describe(faces_tuple, "face")
-
-        ply_data = plyfile.PlyData([el_verts, el_faces])
-        plot_ply(ply_data)
+        # verts, faces, normals, values = np.zeros((0, 3)), np.zeros((0, 3)), np.zeros((0, 3)), np.zeros(0)
+        # try:
+        #     verts, faces, normals, values = skimage.measure.marching_cubes(sdf, level=0.0, spacing=[voxel_size] * 3)
+        # except:
+        #     raise (BrokenPipeError("marching_cubes did not work."))
+        # import plotly
+        # mesh_points = np.zeros_like(verts)
+        # mesh_points[:, 0] = voxel_grid_origin[0] + verts[:, 0]
+        # mesh_points[:, 1] = voxel_grid_origin[1] + verts[:, 1]
+        # mesh_points[:, 2] = voxel_grid_origin[2] + verts[:, 2]
+        #
+        # # try writing to the ply file
+        # num_verts = verts.shape[0]
+        # num_faces = faces.shape[0]
+        # verts_tuple = np.zeros((num_verts,), dtype=[("x", "f4"), ("y", "f4"), ("z", "f4")])
+        # for i in range(0, num_verts):
+        #     verts_tuple[i] = tuple(mesh_points[i, :])
+        #
+        # faces_building = []
+        # for i in range(0, num_faces):
+        #     faces_building.append(((faces[i, :].tolist(),)))
+        # faces_tuple = np.array(faces_building, dtype=[("vertex_indices", "i4", (3,))])
+        #
+        # el_verts = plyfile.PlyElement.describe(verts_tuple, "vertex")
+        # el_faces = plyfile.PlyElement.describe(faces_tuple, "face")
+        #
+        # ply_data = plyfile.PlyData([el_verts, el_faces])
+        # plot_ply(ply_data)
 
 
 class Sphere(Geom3):
@@ -395,7 +416,7 @@ class Octahedron(Geom3):
 
     def compute_sdf(self):
         x, y, z = abs(self.x), abs(self.y), abs(self.z)
-        s = self.params
+        s = self.params[0]
         m = x + y + z - s
         cond1 = f_heaviside(-x + m / 3)
         cond2 = f_heaviside(-y + m / 3)
@@ -452,46 +473,46 @@ class HexagonalPrism(Geom3):
 
 
 if __name__ == "__main__":
-    n = 128
-    x_ = np.linspace(-1., 1., n)
-    x, y, z = np.meshgrid(x_, x_, x_, indexing='ij')
 
-    # s = Box((0.4, 0.1, 0.3))
-    # s.plot_3d_from_sdf(x, y, z)
-    #
-    # s = RoundedBox((0.25, 0.4, 0.1, 0.1))
-    # s.plot_3d_from_sdf(x, y, z)
-    #
-    # t = Torus((0.5, 0.1))
-    # t.plot_3d_from_sdf(x, y, z)
-    # t.rotate(1).scale(2.0).plot_3d_from_sdf(x, y, z)
-    #
+    s = Box((0.4, 0.4, 0.3))
+    s.plot_sdf_3d(res=128)
+
+    s = RoundedBox((0.25, 0.4, 0.1, 0.1))
+    s.plot_sdf_3d()
+
+    t = Torus((0.5, 0.1))
+    t.plot_sdf_3d()
+    t.rotate(1).scale(0.5).plot_sdf_3d()
+
     # ct = RectangularRing((0.5, 0.2, 0.1))
-    # ct.plot_3d_from_sdf(x, y, z)
-    #
+    # ct.plot_sdf_3d()
+
     # hp = HexagonalPrism((0.4, 0.3))
-    # hp.plot_3d_from_sdf(x, y, z)
+    # hp.plot_sdf_3d()
     #
-    # c = Capsule((0.1, -0.1, 0.1, 0.4, 0.4, 0.4, 0.1))
-    # c.plot_3d_from_sdf(x, y, z)
-    #
-    # c = Cylinder((0.1, 0.7))
-    # c.plot_3d_from_sdf(x, y, z)
+    c = Capsule((0, 0, 0, 0.1, 0.1, 0.1, 0.1))
+    c.plot_sdf_3d()
+    c.rotate(0.3, plane='xy').plot_sdf_3d()
+    c.rotate(0.3, plane='yz').plot_sdf_3d()
+    c.onion(0.2).plot_sdf_3d()
+
+    c = Cylinder((0.1, 0.7))
+    c.plot_sdf_3d()
     cc = CappedCone((0.2, 0.2, 0.1))
-    cc.plot_3d_from_sdf(x, y, z)
+    cc.plot_sdf_3d(res=256)
 
     ct = CappedTorus((0.25, 0.15, 0.3, 0.5))
-    ct.plot_3d_from_sdf(x, y, z)
+    ct.plot_sdf_3d(res=256)
 
     hb = HollowBox((0.5, 0.4, 0.3, 0.1))
-    hb.plot_3d_from_sdf(x, y, z)
+    hb.plot_sdf_3d(res=256)
 
-    oh = Octahedron(0.3)
-    oh.plot_3d_from_sdf(x, y, z)
+    oh = Octahedron([0.3])
+    oh.plot_sdf_3d()
 
     e = Ellipsoid((0.3, 0.4, 0.2))
-    e.plot_3d_from_sdf(x, y, z)
-    e.elongate(0.5, along='z').plot_3d_from_sdf(x, y, z)
+    e.plot_sdf_3d()
+    e.elongate(0.5, along='z').plot_sdf_3d()
 
     s = Torus((0.5, 0.2))
-    s.onion(0.25).plot_3d_from_sdf(x, y, z)
+    s.onion(0.25).plot_sdf_3d()

@@ -111,6 +111,33 @@ class Geom:
         self.sdf = self.sdf.subs(sub_dict) * s
         return self
 
+    def elongate(self, h, along="x"):
+        """
+        elongate an object
+
+        :param h: elongation factor
+        :along : axis of alongation
+        :return: elongated object
+        """
+        if along == "x":
+            sub_dict = {self.x: self.x - Min(Max(self.x, -h), h)}
+        elif along == "y":
+            sub_dict = {self.y: self.y - Min(Max(self.y, -h), h)}
+        elif along == "z":
+            raise(ValueError("2D object does not have z dimension"))
+        else:
+            raise(ValueError("axis %s is not recognized, Axes are x, y, z. " % along))
+        self.sdf = self.sdf.subs(sub_dict)
+        return self
+
+    def roundify(self, r):
+        self.sdf -= r
+        return self
+
+    def onion(self, th):
+        self.sdf = abs(self.sdf) - th
+        return self
+
     def union(self, other):
         union_geom = self.copy()
         union_geom.sdf = Min(self.sdf, other.sdf)
