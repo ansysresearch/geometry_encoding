@@ -54,6 +54,23 @@ class Up(nn.Module):
         return self.conv(x)
 
 
+class ConvTrans(nn.Module):
+    """Upscaling tusing convtranspose"""
+
+    def __init__(self, in_channels, out_channels, **kwargs):
+        super().__init__()
+        self.convt = nn.ConvTranspose2d(in_channels, in_channels,  kernel_size=2, stride=2, padding=0, bias=False)
+        self.conv = DoubleConv(in_channels, in_channels // 2, out_channels, **kwargs)
+
+    def forward(self, x1, x2=None):
+        x = self.convt(x1)
+        if x2 is not None:
+            assert x.shape[-1] == x2.shape[-1]
+            assert x.shape[-2] == x2.shape[-2]
+            x = torch.cat([x2, x], dim=1)
+        return self.conv(x)
+
+
 class OutConv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=1):
         super().__init__()

@@ -174,6 +174,69 @@ class AutoEncoder1(nn.Module):
         return x
 
 
+class AutoEncoder2(nn.Module):
+    def __init__(self, n_channels, n_classes):
+        super().__init__()
+
+        self.inconv = DoubleConv(n_channels, 64, 64)
+        self.down1 = Down(64, 128)
+        self.down2 = Down(128, 128)
+        self.down3 = Down(128, 256)
+        self.down4 = Down(256, 256)
+        self.up1 = ConvTrans(256, 256)
+        self.up2 = ConvTrans(256, 128)
+        self.up3 = ConvTrans(128, 128)
+        self.up4 = ConvTrans(128, 64)
+        self.outconv = OutConv(64, n_classes)
+
+    def forward(self, x):
+        x = self.inconv(x)
+
+        x = self.down1(x)
+        x = self.down2(x)
+        x = self.down3(x)
+        x = self.down4(x)
+
+        x = self.up1(x)
+        x = self.up2(x)
+        x = self.up3(x)
+        x = self.up4(x)
+
+        x = self.outconv(x)
+        return x
+
+
+class AutoEncoder3(nn.Module):
+    def __init__(self, n_channels, n_classes):
+        super().__init__()
+
+        self.inconv = DoubleConv(n_channels, 64, 64)
+        self.down1 = Down(64, 128)
+        self.down2 = Down(128, 128)
+        self.down3 = Down(128, 256)
+        self.down4 = Down(256, 256)
+        self.up1 = ConvTrans(256, 256)
+        self.up2 = Up(256, 128)
+        self.up3 = ConvTrans(128, 128)
+        self.up4 = Up(128, 64)
+        self.outconv = OutConv(64, n_classes)
+
+    def forward(self, x):
+        x = self.inconv(x)
+
+        x = self.down1(x)
+        x = self.down2(x)
+        x = self.down3(x)
+        x = self.down4(x)
+
+        x = self.up1(x)
+        x = self.up2(x)
+        x = self.up3(x)
+        x = self.up4(x)
+
+        x = self.outconv(x)
+        return x
+
 def get_network(network_id):
     if network_id == "UNet0":
         return UNet0(n_channels=1, n_classes=1)
@@ -187,6 +250,10 @@ def get_network(network_id):
         return CNN1(n_channels=1, n_classes=1)
     if network_id == "AE1":
         return AutoEncoder1(n_channels=1, n_classes=1)
+    if network_id == "AE2":
+        return AutoEncoder2(n_channels=1, n_classes=1)
+    if network_id == "AE3":
+        return AutoEncoder3(n_channels=1, n_classes=1)
     else:
         raise(IOError("Network ID is not recognized."))
 
