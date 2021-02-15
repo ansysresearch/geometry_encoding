@@ -48,8 +48,9 @@ class Up(nn.Module):
     def forward(self, x1, x2=None):
         x = self.up(x1)
         if x2 is not None:
-            assert x1.shape[0] == 2 * x2.shape[0]
-            x = torch.cat([x2, x1], dim=1)
+            assert x.shape[-1] == x2.shape[-1]
+            assert x.shape[-2] == x2.shape[-2]
+            x = torch.cat([x2, x], dim=1)
         return self.conv(x)
 
 
