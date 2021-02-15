@@ -7,16 +7,16 @@ import torch.nn.functional as F
 class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
-    def __init__(self, in_channels, mid_channels, out_channels, act_fnc=nn.ReLU(inplace=True), bias=True):
+    def __init__(self, in_channels, mid_channels, out_channels, act_fnc=nn.ReLU(),
+                 bias=True, with_normalization=False, stride=1, padding=1, kernel_size=3):
         super().__init__()
-        self.double_conv = nn.Sequential(
-            nn.Conv2d(in_channels, mid_channels, 3, padding=1, bias=bias),
-            #nn.BatchNorm2d(mid_channels),
-            act_fnc,
-            nn.Conv2d(mid_channels, out_channels, 3, padding=1, bias=bias),
-            #nn.BatchNorm2d(out_channels),
-            act_fnc
-            )
+        layers_list = [nn.Conv2d(in_channels, mid_channels, kernel_size, padding=padding, stride=stride, bias=bias)]
+        if with_normalization: layers_list.append(nn.BatchNorm2d(mid_channels))
+        if act_fnc: layers_list.append(act_fnc)
+        layers_list.append(nn.Conv2d(mid_channels, out_channels, kernel_size, padding=padding, stride=stride, bias=bias))
+        if with_normalization: layers_list.append(nn.BatchNorm2d(out_channels))
+        if act_fnc: layers_list.append(act_fnc)
+        self.double_conv = nn.Sequential(*layers_list)
 
     def forward(self, x):
         return self.double_conv(x)
@@ -25,12 +25,12 @@ class DoubleConv(nn.Module):
 class Down(nn.Module):
     """Downscaling with maxpool then double conv"""
 
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, maxpool=True, **kwargs):
         super().__init__()
-        self.maxpool_conv = nn.Sequential(
-            nn.MaxPool2d(2),
-            DoubleConv(in_channels, out_channels, out_channels)
-        )
+        layers_list = []
+        if maxpool: layers_list.append(nn.MaxPool2d(2))
+        layers_list.append(DoubleConv(in_channels, out_channels, out_channels, **kwargs))
+        self.maxpool_conv = nn.Sequential(*layers_list)
 
     def forward(self, x):
         return self.maxpool_conv(x)
@@ -39,21 +39,17 @@ class Down(nn.Module):
 class Up(nn.Module):
     """Upscaling then double conv"""
 
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, **kwargs):
         super().__init__()
 
         self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        self.conv = DoubleConv(in_channels, in_channels // 2, out_channels)
+        self.conv = DoubleConv(in_channels, in_channels // 2, out_channels, **kwargs)
 
-    def forward(self, x1, x2):
-
-        x1 = self.up(x1)
-        # input is CHW
-        diff_y = x2.size()[2] - x1.size()[2]
-        diff_x = x2.size()[3] - x1.size()[3]
-
-        x1 = F.pad(x1, [diff_x // 2, diff_x - diff_x // 2, diff_y // 2, diff_y - diff_y // 2])
-        x = torch.cat([x2, x1], dim=1)
+    def forward(self, x1, x2=None):
+        x = self.up(x1)
+        if x2 is not None:
+            assert x1.shape[0] == 2 * x2.shape[0]
+            x = torch.cat([x2, x1], dim=1)
         return self.conv(x)
 
 

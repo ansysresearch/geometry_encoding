@@ -7,6 +7,8 @@ def parse_arguments():
     # mode
     parser.add_argument('-m', '--mode', dest='mode', type=str, required=True,
                         help='choose either of "train", "test", "test exotic" or "visualize"')
+    parser.add_argument('--autoencoder', dest='autoencoder', type=int, default=0, choices=[0, 1],
+                        help='if true, input and output are the same, and equal to SDF values')
     # data parameters
     parser.add_argument('--n-obj', dest='n_obj', type=int, default=500,
                         help='initial batch of objects for training. multiplied 9x during augmentation')
@@ -29,6 +31,8 @@ def parse_arguments():
                         help='batch size')
     parser.add_argument('--save-every', dest='save_every', type=int, default=10,
                         help='save network every x epochs')
+    parser.add_argument('--loss-fn', dest='loss_fn', type=str, default='l1',
+                        help='loss function, choice of l1 or l2')
     parser.add_argument('--learning-rate', dest='lr', type=float, default=1e-3,
                         help='learning rate')
     parser.add_argument('--min-learning-rate', dest='lr_min', type=float, default=1e-6,

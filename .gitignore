@@ -1,5 +1,6 @@
 # data folder
 data2/dataset*
+outputs/
 
 # models and data
 *.npy

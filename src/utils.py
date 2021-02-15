@@ -71,6 +71,15 @@ def read_data(args, end_suffix=""):
     return train_ds, val_ds
 
 
+def get_loss_func(loss_str):
+    if loss_str == 'l1':
+        loss_func = torch.nn.L1Loss()
+    elif loss_str == 'l2':
+        loss_func = torch.nn.MSELoss()
+    else:
+        raise(ValueError("loss function %s is not recognized" % loss_str))
+    return loss_func
+
 def find_best_gpu():
     # this function finds the GPU with most free memory.
     if 'linux' in sys.platform and torch.cuda.device_count() > 1:
