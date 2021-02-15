@@ -25,6 +25,8 @@ def parse_arguments():
                         help='data type can be either float32 or float 64')
 
     # training parameters
+    parser.add_argument('--use-cpu', dest='use_cpu', type=int, default=0, choices=[0, 1],
+                        help='if true, use cpu')
     parser.add_argument('--n-epochs', dest='n_epochs', type=int, default=100,
                         help='number of epochs')
     parser.add_argument('--batch-size', dest='batch_size', type=int, default=25,

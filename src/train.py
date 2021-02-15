@@ -24,6 +24,7 @@ def train(args):
     scheduler_factor   = args.lr_factor
     scheduler_min_lr   = args.lr_min
     checkpoint_dir     = args.ckpt_dir
+    use_cpu            = args.use_cpu
     network_save_dir   = os.path.join(checkpoint_dir, 'networks')
     runs_save_dir      = os.path.join(checkpoint_dir, 'runs')
 
@@ -33,7 +34,7 @@ def train(args):
     val_loader = DataLoader(val_ds, batch_size=10, shuffle=False, pin_memory=True, drop_last=True)
 
     # set cpu/gpu device
-    device = 'cpu'#torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() and not use_cpu else 'cpu')
     if device == torch.device('cuda'):
         gpu_id = find_best_gpu()
         if gpu_id:
