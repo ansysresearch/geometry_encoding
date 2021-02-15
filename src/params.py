@@ -49,6 +49,8 @@ def parse_arguments():
                         help='folder that all data during train and test will be saved in.')
     parser.add_argument('--n-predict', dest='n_pred', type=int, default=10,
                         help='number of predictions during testing')
+    parser.add_argument('--save-name', dest='save_name', type=str, default="",
+                        help='tag added to runs files')
     return parser.parse_args()
 
 

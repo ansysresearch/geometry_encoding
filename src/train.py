@@ -1,9 +1,9 @@
 import os
-import torch
-import torch.nn as nn
-from torch import optim
-from src import read_data, find_best_gpu, TrainLogger, get_loss_func
+from src import read_data, find_best_gpu, TrainLogger, get_loss_func, get_save_name
 from src.network import get_network
+
+import torch
+from torch import optim
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
@@ -13,8 +13,7 @@ def train(args):
     autoencoder        = args.autoencoder
     dtype              = torch.float32 if args.dtype == "float32" else torch.float64
     network_id         = args.net_id
-    dataset_id         = args.dataset_id + str(args.img_res)
-    save_name          = network_id + '_' + dataset_id
+    save_name          = get_save_name(args)
     num_epochs         = args.n_epochs
     save_every         = args.save_every
     batch_size         = args.batch_size

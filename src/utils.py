@@ -2,6 +2,7 @@ import os
 import sys
 import cv2
 import torch
+import datetime
 import numpy as np
 from torch.utils.data import TensorDataset
 
@@ -80,6 +81,7 @@ def get_loss_func(loss_str):
         raise(ValueError("loss function %s is not recognized" % loss_str))
     return loss_func
 
+
 def find_best_gpu():
     # this function finds the GPU with most free memory.
     if 'linux' in sys.platform and torch.cuda.device_count() > 1:
@@ -88,6 +90,17 @@ def find_best_gpu():
         gpu_id = np.argmax(memory_available).item()
         print("best gpu, %d, %f" %(gpu_id, memory_available[gpu_id]))
         return gpu_id
+
+
+def get_save_name(args):
+    now = datetime.datetime.now()
+    dataset_id = args.dataset_id + str(args.img_res)
+    network_id = args.net_id
+    save_name_tag = args.save_name
+    if len(save_name_tag) == 0:
+        save_name_tag = '_'.join(map(str, [now.month, now.day, now.hour]))
+    save_name = network_id + '_' + dataset_id + '_' + save_name_tag
+    return save_name
 
 
 def compute_edges_img(img):
