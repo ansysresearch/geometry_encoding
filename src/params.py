@@ -37,6 +37,8 @@ def parse_arguments():
                         help='loss function, choice of l1 or l2')
     parser.add_argument('--learning-rate', dest='lr', type=float, default=1e-3,
                         help='learning rate')
+    parser.add_argument('--learning-rate-step', dest='lr_step', type=int,
+                        help='learning rate scheduler step')
     parser.add_argument('--min-learning-rate', dest='lr_min', type=float, default=1e-6,
                         help='minimum learning rate')
     parser.add_argument('--plateau-patience', dest='lr_patience', type=int, default=3,

@@ -20,6 +20,7 @@ def train(args):
     loss_fn            = args.loss_fn
     lr                 = args.lr
     scheduler_patience = args.lr_patience
+    scheduler_step     = args.lr_step
     scheduler_factor   = args.lr_factor
     scheduler_min_lr   = args.lr_min
     checkpoint_dir     = args.ckpt_dir
@@ -43,9 +44,13 @@ def train(args):
     loss_fn = get_loss_func(loss_fn)
     net = get_network(network_id).to(device=device, dtype=dtype)
     optimizer = optim.Adam(net.parameters(), lr=lr)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=scheduler_patience,
-                                                     factor=scheduler_factor,
-                                                     verbose=True, min_lr=scheduler_min_lr)
+    if scheduler_step is None:
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,
+                                                         patience=scheduler_patience,
+                                                         factor=scheduler_factor,
+                                                         verbose=True, min_lr=scheduler_min_lr)
+    else:
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=scheduler_step, gamma=scheduler_factor)
     # writers
 
     tf_writer = SummaryWriter(os.path.join(runs_save_dir, save_name))
@@ -88,7 +93,7 @@ def train(args):
         if epoch % save_every == save_every - 1:
             if not os.path.exists(checkpoint_dir):
                 os.mkdir(checkpoint_dir)
-            torch.save(net.state_dict(), network_save_dir + save_name + ".pth")
+            torch.save(net.state_dict(), os.path.join(network_save_dir, save_name + ".pth"))
             train_log_writer.write_training_step(epoch)
     tf_writer.flush()
     tf_writer.close()

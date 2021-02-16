@@ -98,7 +98,7 @@ def get_save_name(args):
     network_id = args.net_id
     save_name_tag = args.save_name
     if len(save_name_tag) == 0:
-        save_name_tag = '_'.join(map(str, [now.month, now.day, now.hour]))
+        save_name_tag = '_'.join(map(str, [now.month, now.day, now.hour, now.minute]))
     save_name = network_id + '_' + dataset_id + '_' + save_name_tag
     return save_name
 

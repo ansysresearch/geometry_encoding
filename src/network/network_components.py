@@ -8,9 +8,11 @@ class DoubleConv(nn.Module):
     """(convolution => [BN] => ReLU) * 2"""
 
     def __init__(self, in_channels, mid_channels, out_channels, act_fnc=nn.ReLU(),
-                 bias=True, with_normalization=False, stride=1, padding=1, kernel_size=3):
+                 bias=True, with_normalization=False, strided=False):
         super().__init__()
-        layers_list = [nn.Conv2d(in_channels, mid_channels, kernel_size, padding=padding, stride=stride, bias=bias)]
+        kernel_size, padding, stride = 3, 1, 1
+        first_stride = 2 if strided else 1
+        layers_list = [nn.Conv2d(in_channels, mid_channels, kernel_size, padding=padding, stride=first_stride, bias=bias)]
         if with_normalization: layers_list.append(nn.BatchNorm2d(mid_channels))
         if act_fnc: layers_list.append(act_fnc)
         layers_list.append(nn.Conv2d(mid_channels, out_channels, kernel_size, padding=padding, stride=stride, bias=bias))
@@ -28,12 +30,19 @@ class Down(nn.Module):
     def __init__(self, in_channels, out_channels, maxpool=True, **kwargs):
         super().__init__()
         layers_list = []
-        if maxpool: layers_list.append(nn.MaxPool2d(2))
+        if maxpool:
+            layers_list.append(nn.MaxPool2d(2))
         layers_list.append(DoubleConv(in_channels, out_channels, out_channels, **kwargs))
         self.maxpool_conv = nn.Sequential(*layers_list)
 
     def forward(self, x):
         return self.maxpool_conv(x)
+
+
+class Down2(Down):
+    """Downscaling with striding double conv"""
+    def __init__(self, in_channels, out_channels):
+        super().__init__(in_channels, out_channels, maxpool=False, strided=True)
 
 
 class Up(nn.Module):

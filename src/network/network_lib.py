@@ -142,20 +142,20 @@ class UNet3(nn.Module):
         return x
 
 
-class AutoEncoder1(nn.Module):
-    def __init__(self, n_channels, n_classes):
+class AutoEncoder(nn.Module):
+    def __init__(self, n_channels, n_classes, down_module=None, up_module=None):
         super().__init__()
-
-        self.inconv = DoubleConv(n_channels, 64, 64)
-        self.down1 = Down(64, 128)
-        self.down2 = Down(128, 128)
-        self.down3 = Down(128, 256)
-        self.down4 = Down(256, 256)
-        self.up1 = Up(256, 256)
-        self.up2 = Up(256, 128)
-        self.up3 = Up(128, 128)
-        self.up4 = Up(128, 64)
-        self.outconv = OutConv(64, n_classes)
+        s1, s2, s3 = 64, 128, 256
+        self.inconv = DoubleConv(n_channels, s1, s1)
+        self.down1 = down_module(s1, s2)
+        self.down2 = down_module(s2, s2)
+        self.down3 = down_module(s2, s3)
+        self.down4 = down_module(s3, s3)
+        self.up1 = up_module(s3, s3)
+        self.up2 = up_module(s3, s2)
+        self.up3 = up_module(s2, s2)
+        self.up4 = up_module(s2, s1)
+        self.outconv = OutConv(s1, n_classes)
 
     def forward(self, x):
         x = self.inconv(x)
@@ -174,68 +174,25 @@ class AutoEncoder1(nn.Module):
         return x
 
 
-class AutoEncoder2(nn.Module):
+class AutoEncoder1(AutoEncoder):
     def __init__(self, n_channels, n_classes):
-        super().__init__()
-
-        self.inconv = DoubleConv(n_channels, 64, 64)
-        self.down1 = Down(64, 128)
-        self.down2 = Down(128, 128)
-        self.down3 = Down(128, 256)
-        self.down4 = Down(256, 256)
-        self.up1 = ConvTrans(256, 256)
-        self.up2 = ConvTrans(256, 128)
-        self.up3 = ConvTrans(128, 128)
-        self.up4 = ConvTrans(128, 64)
-        self.outconv = OutConv(64, n_classes)
-
-    def forward(self, x):
-        x = self.inconv(x)
-
-        x = self.down1(x)
-        x = self.down2(x)
-        x = self.down3(x)
-        x = self.down4(x)
-
-        x = self.up1(x)
-        x = self.up2(x)
-        x = self.up3(x)
-        x = self.up4(x)
-
-        x = self.outconv(x)
-        return x
+        super().__init__(n_channels, n_classes, down_module=Down, up_module=Up)
 
 
-class AutoEncoder3(nn.Module):
+class AutoEncoder2(AutoEncoder):
     def __init__(self, n_channels, n_classes):
-        super().__init__()
+        super().__init__(n_channels, n_classes, down_module=Down, up_module=ConvTrans)
 
-        self.inconv = DoubleConv(n_channels, 64, 64)
-        self.down1 = Down(64, 128)
-        self.down2 = Down(128, 128)
-        self.down3 = Down(128, 256)
-        self.down4 = Down(256, 256)
-        self.up1 = ConvTrans(256, 256)
-        self.up2 = Up(256, 128)
-        self.up3 = ConvTrans(128, 128)
-        self.up4 = Up(128, 64)
-        self.outconv = OutConv(64, n_classes)
 
-    def forward(self, x):
-        x = self.inconv(x)
+class AutoEncoder3(AutoEncoder):
+    def __init__(self, n_channels, n_classes):
+        super().__init__(n_channels, n_classes, down_module=Down2, up_module=Up)
 
-        x = self.down1(x)
-        x = self.down2(x)
-        x = self.down3(x)
-        x = self.down4(x)
 
-        x = self.up1(x)
-        x = self.up2(x)
-        x = self.up3(x)
-        x = self.up4(x)
+class AutoEncoder4(AutoEncoder):
+    def __init__(self, n_channels, n_classes):
+        super().__init__(n_channels, n_classes, down_module=Down2, up_module=ConvTrans)
 
-        x = self.outconv(x)
-        return x
 
 def get_network(network_id):
     if network_id == "UNet0":
@@ -254,6 +211,8 @@ def get_network(network_id):
         return AutoEncoder2(n_channels=1, n_classes=1)
     if network_id == "AE3":
         return AutoEncoder3(n_channels=1, n_classes=1)
+    if network_id == "AE4":
+        return AutoEncoder4(n_channels=1, n_classes=1)
     else:
         raise(IOError("Network ID is not recognized."))
 
