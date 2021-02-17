@@ -5,7 +5,11 @@ import torch.nn.functional as F
 
 
 class DoubleConv(nn.Module):
-    """(convolution => [BN] => ReLU) * 2"""
+    """
+    (convolution => [BN] => ReLU) * 2
+    if strided, first conv will have stride of 2 (used for pooling)
+    if with_normalization is False, BN layers are removed.
+    """
 
     def __init__(self, in_channels, mid_channels, out_channels, act_fnc=nn.ReLU(),
                  bias=True, with_normalization=False, strided=False):
@@ -52,7 +56,7 @@ class Up(nn.Module):
         super().__init__()
 
         self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        self.conv = DoubleConv(in_channels, in_channels // 2, out_channels, **kwargs)
+        self.conv = DoubleConv(in_channels, (in_channels + out_channels) // 2, out_channels, **kwargs)
 
     def forward(self, x1, x2=None):
         x = self.up(x1)
@@ -66,12 +70,18 @@ class Up(nn.Module):
 class ConvTrans(nn.Module):
     """Upscaling tusing convtranspose"""
 
-    def __init__(self, in_channels, out_channels, **kwargs):
+    def __init__(self, in_channels, out_channels, concat_size=None, **kwargs):
         super().__init__()
-        self.convt = nn.ConvTranspose2d(in_channels, in_channels,  kernel_size=2, stride=2, padding=0, bias=False)
-        self.conv = DoubleConv(in_channels, in_channels // 2, out_channels, **kwargs)
+        self.concat_size = concat_size
+        if concat_size:
+            self.convt = nn.ConvTranspose2d(in_channels, in_channels, kernel_size=2, stride=2, padding=0, bias=False)
+            self.conv = DoubleConv(concat_size, (concat_size + out_channels) // 2, out_channels, **kwargs)
+        else:
+            self.convt = nn.ConvTranspose2d(in_channels, in_channels,  kernel_size=2, stride=2, padding=0, bias=False)
+            self.conv = DoubleConv(in_channels, (in_channels + out_channels) // 2, out_channels, **kwargs)
 
     def forward(self, x1, x2=None):
+        assert (self.concat_size is None) is (x2 is None)
         x = self.convt(x1)
         if x2 is not None:
             assert x.shape[-1] == x2.shape[-1]
