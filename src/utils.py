@@ -132,7 +132,6 @@ def batch_run_unet_model(unet_model, X, device, dtype, batch_size=100):
     return Y2.to(device='cpu')
 
 
-
 def prepare_training_data(X, Y, args, unet_network_id='UNet1'):
     """
     this function prepares training data
@@ -156,11 +155,13 @@ def prepare_training_data(X, Y, args, unet_network_id='UNet1'):
         device = get_device(args, get_best_cuda=False)
 
         # get unet model
-        save_name = get_save_name(args)
         checkpoint_dir = args.ckpt_dir
         network_save_dir = os.path.join(checkpoint_dir, 'networks')
-        unet_save_name = save_name.replace(network_id, unet_network_id)
-        unet_model_address = os.path.join(network_save_dir, unet_save_name + ".pth")
+        # save_name = get_save_name(args)
+        # unet_save_name = save_name.replace(network_id, unet_network_id)
+        unet_save_name = [d for d in os.listdir(network_save_dir) if unet_network_id in d]
+        if len(unet_save_name) > 1: print("multiple %s found" % unet_network_id)
+        unet_model_address = os.path.join(network_save_dir, unet_save_name[0])
         unet_model = get_network(network_id=unet_network_id).to(device=device, dtype=dtype)
         unet_model.load_state_dict(torch.load(unet_model_address, map_location=device))
         unet_model.eval()

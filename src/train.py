@@ -64,7 +64,7 @@ def train(args):
 
         tf_writer.add_scalar("Loss/val", epoch_lossv, epoch)
 
-        if epoch % save_every == save_every - 1:
+        if epoch % save_every == 0 or epoch == num_epochs - 1:
             print(f"epoch {epoch},  ", end="")
             print("training loss=%0.4f,  " % epoch_loss, end="")
             print("validation loss=%0.4f,  " % epoch_lossv)
