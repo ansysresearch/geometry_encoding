@@ -145,7 +145,7 @@ class UNet3(nn.Module):
 class AutoEncoder(nn.Module):
     def __init__(self, n_channels, n_classes, down_module=None, up_module=None):
         super().__init__()
-        s1, s2, s3 = 64, 128, 256
+        s1, s2, s3 = 64, 64, 64
         self.inconv = DoubleConv(n_channels, s1, s1)
         self.down1 = down_module(s1, s2)
         self.down2 = down_module(s2, s2)

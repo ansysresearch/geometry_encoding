@@ -5,10 +5,10 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='SDF 2d')
 
     # mode
-    parser.add_argument('-m', '--mode', dest='mode', type=str, required=True,
+    parser.add_argument('-m', '-mode', dest='mode', type=str, required=True,
                         help='choose either of "train", "test", "test exotic" or "visualize"')
-    parser.add_argument('--autoencoder', dest='autoencoder', type=int, default=0, choices=[0, 1],
-                        help='if true, input and output are the same, and equal to SDF values')
+    parser.add_argument('--model-flag', dest='model_flag', type=int, default=0, choices=[0, 1, 2, 3],
+                        help='see comments under src/utils/prepare_training_data function')
     # data parameters
     parser.add_argument('--n-obj', dest='n_obj', type=int, default=500,
                         help='initial batch of objects for training. multiplied 9x during augmentation')

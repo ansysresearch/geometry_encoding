@@ -1,7 +1,7 @@
 from src import (parse_arguments,
                  generate_dataset,
                  train,
-                 test, test_exotic_shape,
+                 test,
                  viz)
 
 args = parse_arguments()
@@ -12,8 +12,6 @@ if mode == "generate_data":
     generate_dataset(args, test_dataset=True)  # test set
 elif mode == "train":
     train(args)
-elif mode == "test_exotic":
-    test_exotic_shape(args)
 elif mode == "test":
     test(args)
 elif mode == "visualize":
