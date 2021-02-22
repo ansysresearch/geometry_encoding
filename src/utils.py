@@ -2,6 +2,7 @@ import os
 import sys
 import cv2
 import torch
+import pickle
 import datetime
 import numpy as np
 from src.network import get_network
@@ -106,7 +107,7 @@ def get_save_name(args):
     return save_name
 
 
-def batch_run_unet_model(unet_model, X, device, dtype, batch_size=100):
+def batch_run_unet_model(unet_model, X, device, dtype, batch_size=25):
     """"
     To compute labels for encoder network, we may need to run unet model on the entire dataset.
     whole data does not fit on GPU, we should run it in batches
@@ -121,18 +122,18 @@ def batch_run_unet_model(unet_model, X, device, dtype, batch_size=100):
         if n_extra != 0:
             print("throughing out the last %d number of data" % n_extra)
             X = X[:-n_extra, ...]
-        X2 = X.reshape(batch_size, -1, s2, s3, s4)
+        X2 = X.reshape(-1, batch_size, s2, s3, s4)
         Y2 = []
         for xx in X2:
             xx = xx.to(device=device, dtype=dtype)
             yy = unet_model(xx)
-            yy = yy.squeeze(0)
+            # yy = yy.unsqueeze(0)
             Y2.append(yy)
         Y2 = torch.cat(Y2, dim=0)
     return Y2.to(device='cpu')
 
 
-def prepare_training_data(X, Y, args, unet_network_id='UNet1'):
+def prepare_training_data(X, Y, args, unet_network_id='UNet4'):
     """
     this function prepares training data
     autoencoder value is
@@ -140,6 +141,8 @@ def prepare_training_data(X, Y, args, unet_network_id='UNet1'):
       1: this is for training the autoencoder alone, inputs and outputs are true sdf
       2: this is for training autoencoder alone, inputs and outputs are ouputs of unet
       3: this is for training autoencoder alone, inputs are unet outputs, outputs are true sdf
+      4: this is for training deeponet alone, similar to 2
+      5: this is for training deeponet alone, similar to 2
 
     :param X: img data
     :param Y: true sdf data
@@ -150,15 +153,12 @@ def prepare_training_data(X, Y, args, unet_network_id='UNet1'):
     elif model_flag == 1:
         return Y, Y
     else:
-        network_id = args.net_id
         dtype = get_dtype(args)
         device = get_device(args, get_best_cuda=False)
 
         # get unet model
         checkpoint_dir = args.ckpt_dir
         network_save_dir = os.path.join(checkpoint_dir, 'networks')
-        # save_name = get_save_name(args)
-        # unet_save_name = save_name.replace(network_id, unet_network_id)
         unet_save_name = [d for d in os.listdir(network_save_dir) if unet_network_id in d]
         if len(unet_save_name) == 0:
             raise(RuntimeError("no model with name %s exists" % unet_network_id))
@@ -171,8 +171,8 @@ def prepare_training_data(X, Y, args, unet_network_id='UNet1'):
 
         # can't load all data on GPU, must divide into batches
         with torch.no_grad():
-            Y_tmp = batch_run_unet_model(unet_model, X, device, dtype, batch_size=100)
-            if model_flag == 2:
+            Y_tmp = batch_run_unet_model(unet_model, X, device, dtype)
+            if model_flag in [2, 4, 5]:
                 return Y_tmp, Y_tmp
             elif model_flag == 3:
                 return Y_tmp, Y
@@ -185,8 +185,8 @@ def read_data(args, end_suffix=""):
     dataset_id = args.dataset_id + str(args.img_res)
     data_folder = args.data_folder
     img_res = args.img_res
-    img_file_name = data_folder + "img_" + dataset_id + end_suffix + ".npy"
-    sdf_file_name = data_folder + "sdf_" + dataset_id + end_suffix + ".npy"
+    img_file_name = os.path.join(data_folder, "img_" + dataset_id + end_suffix + ".npy")
+    sdf_file_name = os.path.join(data_folder + "sdf_" + dataset_id + end_suffix + ".npy")
 
     # read image (regular grid) data
     imgs = np.load(img_file_name).astype(float)
@@ -203,13 +203,79 @@ def read_data(args, end_suffix=""):
     perm_idx = np.random.permutation(X.shape[0])
     train_idx = perm_idx[:n_train]
     val_idx = perm_idx[n_train:]
-    X_train, X_val = X[train_idx, :, :], X[val_idx, :, :]
-    Y_train, Y_val = Y[train_idx, :, :], Y[val_idx, :, :]
+    X_train, X_val = X[train_idx, ...], X[val_idx, ...]
+    Y_train, Y_val = Y[train_idx, ...], Y[val_idx, ...]
 
     train_ds = TensorDataset(X_train, Y_train)
     val_ds = TensorDataset(X_val, Y_val)
 
     return train_ds, val_ds
+
+
+def read_data_deeponet(args, n_data=100):
+    # get data for deeponet training.
+    # for the args.model_flag:
+    #      if equal 4: training containts % of data with all random points,
+    #                  validation contains rest of data with all random points,
+    #      if equal 5: training contains all data with % of random points
+    #                  validation contains all data with rest of random points
+
+    imgs        = []
+    sdfs        = []
+    rnd_pnts    = []
+    img_res     = args.img_res
+    val_frac    = args.val_frac
+    data_folder = args.data_folder
+    assert args.model_flag >= 4, "not a deeponet model flag."
+
+    for i in range(n_data):
+        file_name = os.path.join(data_folder, "data_dict_%d.pickle" % (i+1))
+        with open(file_name, 'rb') as fid:
+            data_dict = pickle.load(fid)
+            imgs.append(data_dict['img'])
+            sdfs.append(data_dict['sdf_pred'])
+            rnd_pnts.append(data_dict['random_points'])
+
+    # read image (regular grid) data
+    imgs = np.array(imgs).astype(float)
+    imgs = imgs.reshape((-1, 1, img_res, img_res))
+    imgs = torch.from_numpy(imgs)
+
+    sdfs = np.array(sdfs)
+    sdfs = sdfs.reshape((-1, 1, img_res, img_res))
+    sdfs = torch.from_numpy(sdfs)
+
+    X, _ = prepare_training_data(imgs, sdfs, args)
+
+    rnd_pnts = np.array(rnd_pnts)
+    Xp = torch.from_numpy(rnd_pnts[:, :, :3])
+    Yp = torch.from_numpy(rnd_pnts[:, :, 3])
+
+    # split to train and validation sets.
+    if args.model_flag == 4:
+        n_train = int(n_data * (1 - val_frac))
+        perm_idx = np.random.permutation(n_data)
+        train_idx = perm_idx[:n_train]
+        val_idx = perm_idx[n_train:]
+        X_train, X_val = X[train_idx, ...], X[val_idx, ...]
+        Xp_train, Xp_val = Xp[train_idx, ...], Xp[val_idx, ...]
+        Yp_train, Yp_val = Yp[train_idx, ...], Yp[val_idx, ...]
+    elif args.model_flag == 5:
+        n_train = int(10000 * (1 - val_frac))
+        perm_idx = np.random.permutation(n_data)
+        train_idx = perm_idx[:n_train]
+        val_idx = perm_idx[n_train:]
+        X_train, X_val = X, X
+        Xp_train, Xp_val = Xp[:, train_idx, :], Xp[:, val_idx, :]
+        Yp_train, Yp_val = Yp[:, train_idx, :], Yp[:, val_idx, :]
+    else:
+        raise(ValueError("method %d not recognized, see deeponet data gen." %args.model_flag))
+
+    train_ds = TensorDataset(X_train, Xp_train, Yp_train)
+    val_ds = TensorDataset(X_val, Xp_val, Yp_val)
+
+    return train_ds, val_ds
+
 
 def compute_edges_img(img):
     edge_lower_tresh = 50

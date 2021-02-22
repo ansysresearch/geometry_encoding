@@ -1,7 +1,19 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
+
+class DoubleFC(nn.Module):
+    def __init__(self, in_channels, mid_channels, out_channels, last_layer_activated=True, bias=True):
+        super().__init__()
+        layers_list = []
+        layers_list.append(nn.Linear(in_channels, mid_channels, bias=bias))
+        layers_list.append(nn.ReLU())
+        layers_list.append(nn.Linear(mid_channels, out_channels, bias=bias))
+        if last_layer_activated: layers_list.append(nn.ReLU())
+        self.double_fc = nn.Sequential(*layers_list)
+
+    def forward(self, x):
+        return self.double_fc(x)
 
 
 class DoubleConv(nn.Module):

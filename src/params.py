@@ -7,7 +7,7 @@ def parse_arguments():
     # mode
     parser.add_argument('-m', '-mode', dest='mode', type=str, required=True,
                         help='choose either of "train", "test", "test exotic" or "visualize"')
-    parser.add_argument('--model-flag', dest='model_flag', type=int, default=0, choices=[0, 1, 2, 3],
+    parser.add_argument('--model-flag', dest='model_flag', type=int, default=0, choices=[0, 1, 2, 3, 4, 5],
                         help='see comments under src/utils/prepare_training_data function')
     # data parameters
     parser.add_argument('--n-obj', dest='n_obj', type=int, default=500,
@@ -53,6 +53,8 @@ def parse_arguments():
                         help='number of predictions during testing')
     parser.add_argument('--save-name', dest='save_name', type=str, default="",
                         help='tag added to runs files')
+    parser.add_argument('--deeponet-npoints-per-pass', dest='deeponet_npoints_per_pass', type=int, default=10,
+                        help='whatever')
     return parser.parse_args()
 
 

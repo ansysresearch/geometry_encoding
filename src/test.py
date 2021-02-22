@@ -49,10 +49,10 @@ def test(args):
     np.save(test_prediction_file_name, test_data)
 
     # evaluating on exotic dataset
-    test_ds, _ = read_data(args, end_suffix="_exotic")
-    test_data = compute_prediction(args, test_ds)
-    test_prediction_file_name = os.path.join(prediction_save_dir, "exotic_predictions_" + save_name + ".npy")
-    np.save(test_prediction_file_name, test_data)
+    exotic_ds, _ = read_data(args, end_suffix="_exotic")
+    exotic_data = compute_prediction(args, exotic_ds)
+    exotic_prediction_file_name = os.path.join(prediction_save_dir, "exotic_predictions_" + save_name + ".npy")
+    np.save(exotic_prediction_file_name, exotic_data)
 
     # train_results_dict = compute_accuracy_metrics(train_data)
     # train_error_dict_file_name = prediction_save_dir + "train_error_dict_" + save_name + ".pickle"

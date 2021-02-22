@@ -109,7 +109,7 @@ class UNet4(UNet):
 class AutoEncoder(nn.Module):
     def __init__(self, n_channels_in, n_channels_out, down_module=None, up_module=None):
         super().__init__()
-        s1, s2, s3 = 64, 64, 64
+        s1, s2, s3 = 32, 32, 32# 64, 64, 64
         self.inconv  = DoubleConv(n_channels_in, s1, s1)
         self.down1   = down_module(s1, s2)
         self.down2   = down_module(s2, s2)
@@ -158,6 +158,39 @@ class AutoEncoder4(AutoEncoder):
         super().__init__(n_channels_in, n_channels_out, down_module=Down2, up_module=ConvTrans)
 
 
+class DeepONet(nn.Module):
+    def __init__(self, n_channels_in, down_module=None):
+        super().__init__()
+        s1, s2, s3 = 1, 1, 1
+        img_res_when_flattened = 8
+        xy_features = 3
+        self.inconv = DoubleConv(n_channels_in, s1, s1)
+        self.down1  = down_module(s1, s2)
+        self.down2  = down_module(s2, s2)
+        self.down3  = down_module(s2, s3)
+        self.down4  = down_module(s3, s3)
+
+        flatten_size = s3 * img_res_when_flattened ** 2 + xy_features
+        s4, s5, s6 = int(flatten_size ** 0.75), int(flatten_size ** 0.5), int(flatten_size ** 0.25)
+        self.fc1   = DoubleFC(flatten_size, s4, s5)
+        self.fc2   = DoubleFC(s5, s6, 1, last_layer_activated=False)
+
+    def forward(self, img, xy):
+        img = self.inconv(img)
+        img = self.down1(img)
+        img = self.down2(img)
+        img = self.down3(img)
+        img = self.down4(img)
+
+        s1, s2, s3, s4 = img.shape
+        img_flatten = img.view(s1, s2 * s3 * s4)
+        out = [torch.cat((img_flatten, xy[:, i, :]), dim=1) for i in range(xy.shape[1])]
+        out = [self.fc1(o) for o in out]
+        out = [self.fc2(o) for o in out]
+        out = torch.cat(out, dim=1)
+        return out
+
+
 def get_network(network_id):
     n_channels_in, n_channels_out = 1, 1
     if network_id == "UNet1":
@@ -178,6 +211,8 @@ def get_network(network_id):
         return AutoEncoder3(n_channels_in, n_channels_out)
     elif network_id == "AE4":
         return AutoEncoder4(n_channels_in, n_channels_out)
+    elif network_id == "DeepONet":
+        return DeepONet(n_channels_out, down_module=Down2)
     else:
         raise(IOError("Network ID is not recognized."))
 
