@@ -7,7 +7,7 @@ from src import (parse_arguments,
 args = parse_arguments()
 mode = args.mode
 
-if mode == "generate_data":
+if mode == "data":
     generate_dataset(args)  # train set
     generate_dataset(args, test_dataset=True)  # test set
 elif mode == "train":

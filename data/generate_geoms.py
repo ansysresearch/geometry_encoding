@@ -78,8 +78,10 @@ def generate_one_geometry(obj_list, xmax=0.8, ymax=0.8):
     return geom
 
 
-def augment_geometry(geom, mode="all"):
-    if mode == "all":
+def augment_geometry(geom, mode="all2"):
+    if mode == "all2":
+        mode = np.random.choice(["rotate", "translate", "scale"])
+    elif mode == "all3":
         mode = np.random.choice(["rotate", "translate", "scale", "elongate", "onion", "roundify"])
 
     if mode == "rotate":

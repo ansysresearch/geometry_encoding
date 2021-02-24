@@ -1,6 +1,48 @@
 import numpy as np
 # from mayavi import mlab
 import matplotlib.pyplot as plt
+from scipy.ndimage import distance_transform_edt
+from scipy.spatial import distance_matrix
+from scipy.interpolate import interp2d
+
+
+def compute_numerical_sdf(img, return_random_points=False):
+    s = img.shape[0]
+    dist1, indices1 = distance_transform_edt(img, return_indices=True)
+    dist2, indices2 = distance_transform_edt(1-img, return_indices=True)
+    sdf_numerical = dist2 - dist1
+    sdf_numerical /= (s // 2)
+    if return_random_points:
+        n_random_points = 2000
+        x = np.linspace(-1, 1, s)
+        random_points = np.random.random(n_random_points) * 2 - 1
+        random_points = np.sort(random_points)
+        f_interp = interp2d(x, x, sdf_numerical, kind='cubic')
+        random_points_sdf = f_interp(random_points, random_points)
+        xidx = np.random.randint(0, n_random_points, n_random_points)
+        yidx = np.random.randint(0, n_random_points, n_random_points)
+        random_points = np.array([random_points[xidx], random_points[yidx], random_points_sdf[yidx, xidx]]).T
+        # indices_out = np.unique(indices1[:, img > 0], axis=1)
+        # boundary_out = np.array([x[indices_out[1, :]], x[indices_out[0, :]]])
+        # indices_in = np.unique(indices2[:, img < 1], axis=1)
+        # boundary_in = np.array([x[indices_in[1, :]], x[indices_in[0, :]]])
+        # dist_in = distance_matrix(random_points, boundary_in.T).min(axis=1)
+        # dist_out = distance_matrix(random_points, boundary_out.T).min(axis=1)
+        # random_points_sdf = - dist_out
+        # random_points_sdf[dist_in > dist_out] = dist_in[dist_in > dist_out]
+        # random_points_sdf = []
+        # for point in random_points:
+        #     dist_in  = np.linalg.norm(boundary_in - point.T, axis=0).min()
+        #     dist_out = np.linalg.norm(boundary_out - point.T, axis=0).min()
+        #     if dist_in < dist_out:
+        #         random_points_sdf.append(-dist_out)
+        #     else:
+        #         random_points_sdf.append(dist_in)
+        # random_points_sdf = random_points_sdf.reshape(-1, 1)
+        # random_points = np.concatenate([random_points, random_points, random_points_sdf], axis=1)
+        return sdf_numerical, random_points
+    else:
+        return sdf_numerical
 
 
 def plot_sdf(img, sdf, xticks=(-1, 1), yticks=(-1, 1), plot_eikonal=False, show=True, colorbar=False):
