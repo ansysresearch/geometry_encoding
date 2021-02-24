@@ -159,36 +159,85 @@ class AutoEncoder4(AutoEncoder):
 
 
 class DeepONet(nn.Module):
-    def __init__(self, n_channels_in, down_module=None):
+    def __init__(self, n_channels_in, down_module=None, freeze_encoder=False, with_fc_before_concat=True):
         super().__init__()
-        s1, s2, s3 = 1, 1, 1
+        s1, s2, s3 = 32, 32, 32
+        s4, s5, s6 = 512, 256, 128
+        s7, s8, s9 = 64, 32, 1
         img_res_when_flattened = 8
-        xy_features = 3
+        xy_features = 2
+        self.freeze_encoder = freeze_encoder
+        self.with_fc_before_concat = with_fc_before_concat
         self.inconv = DoubleConv(n_channels_in, s1, s1)
         self.down1  = down_module(s1, s2)
         self.down2  = down_module(s2, s2)
         self.down3  = down_module(s2, s3)
         self.down4  = down_module(s3, s3)
 
-        flatten_size = s3 * img_res_when_flattened ** 2 + xy_features
-        s4, s5, s6 = int(flatten_size ** 0.75), int(flatten_size ** 0.5), int(flatten_size ** 0.25)
-        self.fc1   = DoubleFC(flatten_size, s4, s5)
-        self.fc2   = DoubleFC(s5, s6, 1, last_layer_activated=False)
+        if self.with_fc_before_concat:
+            flatten_size = s3 * img_res_when_flattened ** 2
+            fc_before_concat_channels = [flatten_size, s4, s5, s6, s7]
+            fc1_channels = [s7 + xy_features, s8, s9]
+            self.fc_before_concat = MultipleFC(fc_before_concat_channels)
+            self.fc1 = MultipleFC(fc1_channels, last_layer_activated=False)
+        else:
+            flatten_size = s3 * img_res_when_flattened ** 2 + xy_features
+            fc1_channels = [flatten_size, s4, s6, s8, s9]
+            self.fc1 = MultipleFC(fc1_channels, last_layer_activated=False)
+
+    def load_encoder_weights(self, encoder_dict):
+        model_dict = self.state_dict()
+        model_dict_new = {}
+        for k in model_dict:
+            v = model_dict[k] if k not in encoder_dict.keys() else encoder_dict[k]
+            model_dict_new[k] = v
+        self.load_state_dict(model_dict_new)
 
     def forward(self, img, xy):
-        img = self.inconv(img)
-        img = self.down1(img)
-        img = self.down2(img)
-        img = self.down3(img)
-        img = self.down4(img)
+        if self.freeze_encoder:
+            with torch.no_grad():
+                img = self.inconv(img)
+                img = self.down1(img)
+                img = self.down2(img)
+                img = self.down3(img)
+                img = self.down4(img)
+        else:
+            img = self.inconv(img)
+            img = self.down1(img)
+            img = self.down2(img)
+            img = self.down3(img)
+            img = self.down4(img)
 
         s1, s2, s3, s4 = img.shape
         img_flatten = img.view(s1, s2 * s3 * s4)
-        out = [torch.cat((img_flatten, xy[:, i, :]), dim=1) for i in range(xy.shape[1])]
+        if self.with_fc_before_concat:
+            img = self.fc_before_concat(img_flatten)
+            out = [torch.cat((img, xy[:, i, :]), dim=1) for i in range(xy.shape[1])]
+        else:
+            out = [torch.cat((img_flatten, xy[:, i, :]), dim=1) for i in range(xy.shape[1])]
         out = [self.fc1(o) for o in out]
-        out = [self.fc2(o) for o in out]
         out = torch.cat(out, dim=1)
         return out
+
+
+class DeepONet1(DeepONet):
+    def __init__(self, n_channels_in):
+        super().__init__(n_channels_in, down_module=Down2, freeze_encoder=False, with_fc_before_concat=True)
+
+
+class DeepONet2(DeepONet):
+    def __init__(self, n_channels_in):
+        super().__init__(n_channels_in, down_module=Down2, freeze_encoder=True, with_fc_before_concat=True)
+
+
+class DeepONet3(DeepONet):
+    def __init__(self, n_channels_in):
+        super().__init__(n_channels_in, down_module=Down2, freeze_encoder=False, with_fc_before_concat=False)
+
+
+class DeepONet4(DeepONet):
+    def __init__(self, n_channels_in):
+        super().__init__(n_channels_in, down_module=Down2, freeze_encoder=True, with_fc_before_concat=False)
 
 
 def get_network(network_id):
@@ -211,8 +260,14 @@ def get_network(network_id):
         return AutoEncoder3(n_channels_in, n_channels_out)
     elif network_id == "AE4":
         return AutoEncoder4(n_channels_in, n_channels_out)
-    elif network_id == "DeepONet":
-        return DeepONet(n_channels_out, down_module=Down2)
+    elif network_id == "DeepONet1":
+        return DeepONet1(n_channels_out)
+    elif network_id == "DeepONet2":
+        return DeepONet2(n_channels_out)
+    elif network_id == "DeepONet3":
+        return DeepONet3(n_channels_out)
+    elif network_id == "DeepONet4":
+        return DeepONet4(n_channels_out)
     else:
         raise(IOError("Network ID is not recognized."))
 

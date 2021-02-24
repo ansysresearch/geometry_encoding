@@ -8,7 +8,7 @@ _obj_list_3d = ("Sphere", "Ellipsoid", "Capsule", "Cylinder", "Box",
 _obj_list_2d = ("Circle", "nGon", "Rectangle", "Diamond")
 
 
-def generate_dataset(args, test_dataset=False, obj_list=_obj_list_2d, return_random_points=True, show=False):
+def generate_dataset(args, test_dataset=False, obj_list=_obj_list_2d, return_random_points=True, show=True):
     n_obj = args.n_obj // 10 if test_dataset else args.n_obj
     dataset_id = args.dataset_id + str(args.img_res)
     save_name = dataset_id + "_test" if test_dataset else dataset_id
@@ -19,10 +19,12 @@ def generate_dataset(args, test_dataset=False, obj_list=_obj_list_2d, return_ran
     x, y = np.meshgrid(np.linspace(-1, 1, img_res), np.linspace(-1, 1, img_res))
 
     # generate all geometries, and their sdfs
+    print("generating objects")
     geoms1 = generate_geometries(n_obj=n_obj, obj_list=obj_list)
     sdf1 = [g.eval_sdf(x, y) for g in geoms1]
 
     # create geometries that are composed of two or three objects, compute their sdf
+    print("augmenting objects")
     geoms2, sdf2 = combine_geometries(geoms1, 2, 2*n_obj, x, y)
     geoms3, sdf3 = combine_geometries(geoms1, 3, 3*n_obj, x, y)
     sdfs = np.array(sdf1 + sdf2 + sdf3)

@@ -94,23 +94,33 @@ def train_deeponet(args):
     runs_save_dir      = os.path.join(checkpoint_dir, 'runs')
 
     # read data
-    train_ds, val_ds = read_data_deeponet(args)
+    # train_ds, val_ds = read_data_deeponet(args)
+    train_ds, val_ds = read_data(args, end_suffix="_new", with_random_points=True)
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, pin_memory=True)
     val_loader = DataLoader(val_ds, batch_size=10, shuffle=False, pin_memory=True, drop_last=True)
 
     # set cpu/gpu device
     device = get_device(args)
 
-    # read network and setup optimizer, loss
-    loss_fn = get_loss_func(loss_fn)
+    # read network and load pre-trained weights if available
     net = get_network(network_id).to(device=device, dtype=dtype)
+    encoder_model_name = [d for d in os.listdir(network_save_dir) if "AE4" in d]
+    if len(encoder_model_name) > 0:
+        encoder_model_name = os.path.join(network_save_dir, encoder_model_name[0])
+        encoder_dict = torch.load(encoder_model_name, map_location=device)
+        net.load_encoder_weights(encoder_dict=encoder_dict)
+    else:
+        print("no encoding model was found. pretraining does not happen.")
+
+    # setup optimizer, loss
+    loss_fn = get_loss_func(loss_fn)
     optimizer, scheduler = get_optimizer(net, args)
 
     tf_writer = SummaryWriter(os.path.join(runs_save_dir, save_name))
     train_log_writer = TrainLogger(os.path.join(runs_save_dir, save_name + "_training_logs"), optimizer)
 
     n_points_per_forward_pass = args.deeponet_npoints_per_pass
-    n_points_tot = 10000
+    n_points_tot = len(train_ds[0][-1])  # number of random points sampled
     for epoch in range(num_epochs):
         net.train()
         epoch_loss = 0

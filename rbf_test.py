@@ -337,3 +337,14 @@ plt.gca().format_coord = fmt
 plt.show()
 
 
+class ScipyInterp2Layer(Function):
+    @staticmethod
+    def forward(ctx, img, xy):
+        # do the interpolation
+        pass
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        # compute the derivative of this layer
+        pass
+

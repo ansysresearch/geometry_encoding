@@ -180,13 +180,13 @@ def prepare_training_data(X, Y, args, unet_network_id='UNet4'):
                 raise(ValueError("model_flag value %d is not recognized" %model_flag))
 
 
-def read_data(args, end_suffix=""):
+def read_data(args, end_suffix="", with_random_points=False):
     val_frac = args.val_frac
     dataset_id = args.dataset_id + str(args.img_res)
     data_folder = args.data_folder
     img_res = args.img_res
     img_file_name = os.path.join(data_folder, "img_" + dataset_id + end_suffix + ".npy")
-    sdf_file_name = os.path.join(data_folder + "sdf_" + dataset_id + end_suffix + ".npy")
+    sdf_file_name = os.path.join(data_folder, "sdf_" + dataset_id + end_suffix + ".npy")
 
     # read image (regular grid) data
     imgs = np.load(img_file_name).astype(float)
@@ -206,8 +206,18 @@ def read_data(args, end_suffix=""):
     X_train, X_val = X[train_idx, ...], X[val_idx, ...]
     Y_train, Y_val = Y[train_idx, ...], Y[val_idx, ...]
 
-    train_ds = TensorDataset(X_train, Y_train)
-    val_ds = TensorDataset(X_val, Y_val)
+    if with_random_points:
+        rnd_pnts_file_name = os.path.join(data_folder, "pnts_" + dataset_id + end_suffix + ".npy")
+        rnd_pnts = np.load(rnd_pnts_file_name).astype(float)
+        Xp = torch.from_numpy(rnd_pnts[:, :, :-1])
+        Yp = torch.from_numpy(rnd_pnts[:, :, -1])
+        Xp_train, Xp_val = Xp[train_idx, ...], Xp[val_idx, ...]
+        Yp_train, Yp_val = Yp[train_idx, ...], Yp[val_idx, ...]
+        train_ds = TensorDataset(X_train, Xp_train, Yp_train)
+        val_ds = TensorDataset(X_val, Xp_val, Yp_val)
+    else:
+        train_ds = TensorDataset(X_train, Y_train)
+        val_ds = TensorDataset(X_val, Y_val)
 
     return train_ds, val_ds
 
@@ -228,6 +238,13 @@ def read_data_deeponet(args, n_data=100):
     data_folder = args.data_folder
     assert args.model_flag >= 4, "not a deeponet model flag."
 
+    # for i in range(n_data):
+    #     file_name = os.path.join(data_folder, "data_dict_%d.pickle" % (i+1))
+    #     with open(file_name, 'rb') as fid:
+    #         data_dict = pickle.load(fid)
+    #         imgs.append(data_dict['img'])
+    #         sdfs.append(data_dict['sdf_pred'])
+    #         rnd_pnts.append(data_dict['random_points'])
     for i in range(n_data):
         file_name = os.path.join(data_folder, "data_dict_%d.pickle" % (i+1))
         with open(file_name, 'rb') as fid:
@@ -235,6 +252,7 @@ def read_data_deeponet(args, n_data=100):
             imgs.append(data_dict['img'])
             sdfs.append(data_dict['sdf_pred'])
             rnd_pnts.append(data_dict['random_points'])
+
 
     # read image (regular grid) data
     imgs = np.array(imgs).astype(float)

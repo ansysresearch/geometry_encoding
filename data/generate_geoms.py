@@ -135,8 +135,6 @@ def augment_geometry(geom, mode="all2"):
 
 
 def generate_geometries(n_obj=500, n_aug=3, obj_list=("Circle", "Rectangle", "Diamond", "Cross", "nGon")):
-
-    print("generating objects")
     geoms = [generate_one_geometry(obj_list) for _ in range(n_obj)]
 
     # geoms is centered at origin. we randomly translate all geoms
