@@ -95,7 +95,7 @@ def train_deeponet(args):
 
     # read data
     # train_ds, val_ds = read_data_deeponet(args)
-    train_ds, val_ds = read_data(args, end_suffix="_new", with_random_points=True)
+    train_ds, val_ds = read_data(args, with_random_points=True)
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True, pin_memory=True)
     val_loader = DataLoader(val_ds, batch_size=10, shuffle=False, pin_memory=True, drop_last=True)
 
@@ -103,8 +103,9 @@ def train_deeponet(args):
     device = get_device(args)
 
     # read network and load pre-trained weights if available
+    data_network_id = args.data_network_id
     net = get_network(network_id).to(device=device, dtype=dtype)
-    encoder_model_name = [d for d in os.listdir(network_save_dir) if "AE4" in d]
+    encoder_model_name = [d for d in os.listdir(network_save_dir) if data_network_id in d]
     if len(encoder_model_name) > 0:
         encoder_model_name = os.path.join(network_save_dir, encoder_model_name[0])
         encoder_dict = torch.load(encoder_model_name, map_location=device)

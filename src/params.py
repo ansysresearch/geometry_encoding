@@ -18,6 +18,9 @@ def parse_arguments():
                         help='folder where data are stored')
     parser.add_argument('--dataset-id', dest='dataset_id', type=str, default='all',
                         help='name of dataset')
+    parser.add_argument('--data-network-id', dest='data_network_id', type=str,
+                        help='processor or compressor network when generating data for training compressor or evaluator')
+
     # network parameters
     parser.add_argument('--network-id', dest='net_id', type=str, default='UNet1',
                         help='id of the network. see network/network_lib.py')

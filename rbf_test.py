@@ -361,19 +361,23 @@ boundary_out = np.array([x[indices_out[1, :]], x[indices_out[0, :]]])
 dist_out, indices = distance_transform_edt(1-img, return_indices=True)
 indices_in = np.unique(indices[:, img < 1], axis=1)
 boundary_in = np.array([x[indices_in[1, :]], x[indices_in[0, :]]])
-sdf1024 = (dist_out - dist_in) / (N//2)
-sdf128c = sdf1024[::8, ::8]
+sdf2033 = (dist_out - dist_in) / (N//2)
+sdf128c = sdf2033[::16, ::16]
 
 
 plt.figure()
 plt.contourf(img, cmap='binary')
 plt.figure()
-plt.contourf(sdf1024, 50, cmap='hot')
+plt.show()
+plt.contourf(sdf2033, 50, cmap='hot')
 plt.figure()
+plt.show()
 plt.contourf(sdf128c, 50, cmap='hot')
 plt.figure()
+plt.show()
 plt.contourf(sdf128c-sdf128, 50, cmap='hot')
-plt.show
+plt.colorbar()
+plt.show()
 
 # import scipy.interpolate as si
 # func = si.interp2d(X, Y, sdf)

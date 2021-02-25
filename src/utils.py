@@ -107,7 +107,7 @@ def get_save_name(args):
     return save_name
 
 
-def batch_run_unet_model(unet_model, X, device, dtype, batch_size=25):
+def batch_run_model(model, X, device, dtype, batch_size=25):
     """"
     To compute labels for encoder network, we may need to run unet model on the entire dataset.
     whole data does not fit on GPU, we should run it in batches
@@ -116,7 +116,7 @@ def batch_run_unet_model(unet_model, X, device, dtype, batch_size=25):
     assert s2 == 1 and s3 == s4, "check batch_run_unet_model function"
     if s1 < batch_size:
         X2 = X.to(device=device, dtype=dtype)
-        Y2 = unet_model(X2)
+        Y2 = model(X2)
     else:
         n_extra = s1 % batch_size
         if n_extra != 0:
@@ -126,14 +126,14 @@ def batch_run_unet_model(unet_model, X, device, dtype, batch_size=25):
         Y2 = []
         for xx in X2:
             xx = xx.to(device=device, dtype=dtype)
-            yy = unet_model(xx)
+            yy = model(xx)
             # yy = yy.unsqueeze(0)
             Y2.append(yy)
         Y2 = torch.cat(Y2, dim=0)
     return Y2.to(device='cpu')
 
 
-def prepare_training_data(X, Y, args, unet_network_id='UNet4'):
+def prepare_training_data(X, Y, args):
     """
     this function prepares training data
     autoencoder value is
@@ -141,16 +141,17 @@ def prepare_training_data(X, Y, args, unet_network_id='UNet4'):
       1: this is for training the autoencoder alone, inputs and outputs are true sdf
       2: this is for training autoencoder alone, inputs and outputs are ouputs of unet
       3: this is for training autoencoder alone, inputs are unet outputs, outputs are true sdf
-      4: this is for training deeponet alone, similar to 2
+      4: this is for training deeponet alone, similar to 1
       5: this is for training deeponet alone, similar to 2
 
     :param X: img data
     :param Y: true sdf data
     """
     model_flag = args.model_flag
+    data_network_id = args.data_network_id
     if model_flag == 0:
         return X, Y
-    elif model_flag == 1:
+    elif model_flag in [1, 4]:
         return Y, Y
     else:
         dtype = get_dtype(args)
@@ -159,20 +160,20 @@ def prepare_training_data(X, Y, args, unet_network_id='UNet4'):
         # get unet model
         checkpoint_dir = args.ckpt_dir
         network_save_dir = os.path.join(checkpoint_dir, 'networks')
-        unet_save_name = [d for d in os.listdir(network_save_dir) if unet_network_id in d]
-        if len(unet_save_name) == 0:
-            raise(RuntimeError("no model with name %s exists" % unet_network_id))
-        elif len(unet_save_name) > 1:
-            print("multiple %s found" % unet_network_id)
-        unet_model_address = os.path.join(network_save_dir, unet_save_name[0])
-        unet_model = get_network(network_id=unet_network_id).to(device=device, dtype=dtype)
-        unet_model.load_state_dict(torch.load(unet_model_address, map_location=device))
-        unet_model.eval()
+        data_network_save_name = [d for d in os.listdir(network_save_dir) if data_network_id in d]
+        if len(data_network_save_name) == 0:
+            raise(RuntimeError("no model with name %s exists" % data_network_id))
+        elif len(data_network_save_name) > 1:
+            print("multiple %s found" % data_network_id)
+        data_network_model_address = os.path.join(network_save_dir, data_network_save_name[0])
+        data_network_model = get_network(network_id=data_network_id.split("_")[0]).to(device=device, dtype=dtype)
+        data_network_model.load_state_dict(torch.load(data_network_model_address, map_location=device))
+        data_network_model.eval()
 
         # can't load all data on GPU, must divide into batches
         with torch.no_grad():
-            Y_tmp = batch_run_unet_model(unet_model, X, device, dtype)
-            if model_flag in [2, 4, 5]:
+            Y_tmp = batch_run_model(data_network_model, X, device, dtype)
+            if model_flag in [2, 5]:
                 return Y_tmp, Y_tmp
             elif model_flag == 3:
                 return Y_tmp, Y
