@@ -105,13 +105,14 @@ def train_deeponet(args):
     # read network and load pre-trained weights if available
     data_network_id = args.data_network_id
     net = get_network(network_id).to(device=device, dtype=dtype)
-    encoder_model_name = [d for d in os.listdir(network_save_dir) if data_network_id in d]
-    if len(encoder_model_name) > 0:
+    try:
+        encoder_model_name = [d for d in os.listdir(network_save_dir) if data_network_id in d]
         encoder_model_name = os.path.join(network_save_dir, encoder_model_name[0])
         encoder_dict = torch.load(encoder_model_name, map_location=device)
         net.load_encoder_weights(encoder_dict=encoder_dict)
-    else:
-        print("no encoding model was found. pretraining does not happen.")
+    except:
+        print("no suitable encoding model was found. pretraining does not happen.")
+
 
     # setup optimizer, loss
     loss_fn = get_loss_func(loss_fn)

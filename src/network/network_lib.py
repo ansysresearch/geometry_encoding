@@ -159,15 +159,22 @@ class AutoEncoder4(AutoEncoder):
 
 
 class DeepONet(nn.Module):
-    def __init__(self, n_channels_in, down_module=None, freeze_encoder=False, with_fc_before_concat=True):
+    def __init__(self, n_channels_in, down_module=None, freeze_encoder=False,
+                 with_fc_before_concat=True, with_xy_channels=False):
+
         super().__init__()
         s1, s2, s3 = 32, 32, 32
         s4, s5, s6 = 512, 256, 128
         s7, s8, s9 = 64, 32, 1
         img_res_when_flattened = 8
-        xy_features = 2
+        xy_features = 2 # 0 if with_xy_channels else 2
+        n_channels_in += 2 if with_xy_channels else 0
+
+        self.with_xy_channels = with_xy_channels
         self.freeze_encoder = freeze_encoder
         self.with_fc_before_concat = with_fc_before_concat
+        self.xy_channels = None
+
         self.inconv = DoubleConv(n_channels_in, s1, s1)
         self.down1  = down_module(s1, s2)
         self.down2  = down_module(s2, s2)
@@ -184,6 +191,22 @@ class DeepONet(nn.Module):
             fc1_channels = [flatten_size, s4, s6, s8, s9]
         self.fc1 = MultipleFC(fc1_channels, last_layer_activated=False)
 
+    def add_xy_channels(self, img):
+        if self.with_xy_channels:
+            if self.xy_channels is None:
+                s1, s2, s3, s4 = img.shape
+                assert s3 == s4 and s2 == 1
+                img_res = img.shape[-1]
+                dtype = img.dtype
+                device = img.device
+                x = torch.linspace(-1, 1, img_res).to(dtype=dtype, device=device)
+                X, Y = torch.meshgrid(x, x)
+                XY = torch.stack([X, Y])
+                XY = torch.stack([XY] * s1)
+                self.xy_channels = XY
+            img = torch.cat((self.xy_channels, img), dim=1)
+        return img
+
     def load_encoder_weights(self, encoder_dict):
         model_dict = self.state_dict()
         model_dict_new = {}
@@ -193,6 +216,7 @@ class DeepONet(nn.Module):
         self.load_state_dict(model_dict_new)
 
     def forward(self, img, xy):
+        img = self.add_xy_channels(img)
         if self.freeze_encoder:
             with torch.no_grad():
                 img = self.inconv(img)
@@ -214,6 +238,7 @@ class DeepONet(nn.Module):
             out = [torch.cat((img, xy[:, i, :]), dim=1) for i in range(xy.shape[1])]
         else:
             out = [torch.cat((img_flatten, xy[:, i, :]), dim=1) for i in range(xy.shape[1])]
+
         out = [self.fc1(o) for o in out]
         out = torch.cat(out, dim=1)
         return out
@@ -237,6 +262,12 @@ class DeepONet3(DeepONet):
 class DeepONet4(DeepONet):
     def __init__(self, n_channels_in):
         super().__init__(n_channels_in, down_module=Down2, freeze_encoder=True, with_fc_before_concat=False)
+
+
+class DeepONet5(DeepONet):
+    def __init__(self, n_channels_in):
+        super().__init__(n_channels_in, down_module=Down2, freeze_encoder=False, with_fc_before_concat=False,
+                         with_xy_channels=True)
 
 
 def get_network(network_id):
@@ -267,6 +298,8 @@ def get_network(network_id):
         return DeepONet3(n_channels_out)
     elif network_id == "DeepONet4":
         return DeepONet4(n_channels_out)
+    elif network_id == "DeepONet5":
+        return DeepONet5(n_channels_out)
     else:
         raise(IOError("Network ID is not recognized."))
 
