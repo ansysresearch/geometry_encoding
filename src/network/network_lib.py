@@ -179,11 +179,10 @@ class DeepONet(nn.Module):
             fc_before_concat_channels = [flatten_size, s4, s5, s6, s7]
             fc1_channels = [s7 + xy_features, s8, s9]
             self.fc_before_concat = MultipleFC(fc_before_concat_channels)
-            self.fc1 = MultipleFC(fc1_channels, last_layer_activated=False)
         else:
             flatten_size = s3 * img_res_when_flattened ** 2 + xy_features
             fc1_channels = [flatten_size, s4, s6, s8, s9]
-            self.fc1 = MultipleFC(fc1_channels, last_layer_activated=False)
+        self.fc1 = MultipleFC(fc1_channels, last_layer_activated=False)
 
     def load_encoder_weights(self, encoder_dict):
         model_dict = self.state_dict()

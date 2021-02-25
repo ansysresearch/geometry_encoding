@@ -326,25 +326,62 @@ for p in pnts:
     # plt.plot(boundary_out[0, argmin_out], boundary_out[1, argmin_out], marker='s')
 
 
-import scipy.interpolate as si
-func = si.interp2d(X, Y, sdf)
-def fmt(x, y):
-    z = np.take(func(x, y), 0)
-    return 'x={x:.5f}  y={y:.5f}  z={z:.5f}'.format(x=x, y=y, z=z)
 
 
-plt.gca().format_coord = fmt
-plt.show()
+
+# compare sdfs of different resolution
+N = 128
+x = np.linspace(-1, 1, N)
+X, Y = np.meshgrid(x, x)#np.mgrid[:N, :N]
+img = np.zeros((N, N))
+img[np.logical_and(np.logical_and(X<0.3, X>-0.2), np.logical_and(Y>0.5, Y<0.9))] = 1
+img[(X-0.3)**2 + (Y+0.3)**2 < 0.3] = 1
+dist_in, indices = distance_transform_edt(img, return_indices=True)
+indices_out = np.unique(indices[:, img > 0], axis=1)
+boundary_out = np.array([x[indices_out[1, :]], x[indices_out[0, :]]])
+dist_out, indices = distance_transform_edt(1-img, return_indices=True)
+indices_in = np.unique(indices[:, img < 1], axis=1)
+boundary_in = np.array([x[indices_in[1, :]], x[indices_in[0, :]]])
+sdf128 = (dist_out - dist_in) / (N//2)
+
+plt.figure()
+plt.contourf(img, cmap='binary')
+plt.figure()
+plt.contourf(sdf128, 50, cmap='hot')
+
+N = 2033# 1017
+x = np.linspace(-1, 1, N)
+X, Y = np.meshgrid(x, x)#np.mgrid[:N, :N]
+img = np.zeros((N, N))
+img[np.logical_and(np.logical_and(X<0.3, X>-0.2), np.logical_and(Y>0.5, Y<0.9))] = 1
+img[(X-0.3)**2 + (Y+0.3)**2 < 0.3] = 1
+dist_in, indices = distance_transform_edt(img, return_indices=True)
+indices_out = np.unique(indices[:, img > 0], axis=1)
+boundary_out = np.array([x[indices_out[1, :]], x[indices_out[0, :]]])
+dist_out, indices = distance_transform_edt(1-img, return_indices=True)
+indices_in = np.unique(indices[:, img < 1], axis=1)
+boundary_in = np.array([x[indices_in[1, :]], x[indices_in[0, :]]])
+sdf1024 = (dist_out - dist_in) / (N//2)
+sdf128c = sdf1024[::8, ::8]
 
 
-class ScipyInterp2Layer(Function):
-    @staticmethod
-    def forward(ctx, img, xy):
-        # do the interpolation
-        pass
+plt.figure()
+plt.contourf(img, cmap='binary')
+plt.figure()
+plt.contourf(sdf1024, 50, cmap='hot')
+plt.figure()
+plt.contourf(sdf128c, 50, cmap='hot')
+plt.figure()
+plt.contourf(sdf128c-sdf128, 50, cmap='hot')
+plt.show
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        # compute the derivative of this layer
-        pass
+# import scipy.interpolate as si
+# func = si.interp2d(X, Y, sdf)
+# def fmt(x, y):
+#     z = np.take(func(x, y), 0)
+#     return 'x={x:.5f}  y={y:.5f}  z={z:.5f}'.format(x=x, y=y, z=z)
+#
+#
+# plt.gca().format_coord = fmt
+# plt.show()
 

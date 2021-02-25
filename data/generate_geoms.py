@@ -165,6 +165,19 @@ def combine_geometries(geoms, n1, n2, x, y):
     return combined_geoms, combined_sdf
 
 
+def combine_imgs(imgs, n1, n2):
+    # n1 is number of img in each combination
+    # n2 is the number of combinations
+    # e.g. n1=2, n3=3 which give [(g1, g2), (g3, g4), (g5, g6)]
+    random_idx = np.random.randint(0, len(imgs)-1, n1*n2).reshape(n2, n1)
+    combined_imgs = []
+    for idx in random_idx:
+        img_list = np.array([imgs[i] for i in idx])
+        combined_img = np.clip(img_list.sum(axis=0), 0, 1)
+        combined_imgs.append(combined_img)
+    return np.array(combined_imgs)
+
+
 def sample_near_geometry(geoms, n_sample, lb=-np.inf, ub=np.inf):
     sample_pnts = []
     if n_sample == 0:
@@ -203,6 +216,19 @@ def filter_sdfs(sdf):
     elif np.any(np.min(sdf < 0, axis=0)):  #object extends an entire row
         return False
     elif np.any(np.min(sdf < 0, axis=1)):  #object extends an entire column
+        return False
+    else:
+        return True
+
+
+def filter_imgs(img):
+    if np.mean(img) > 0.85: #object is too big
+        return False
+    elif np.mean(img) < 0.1: #object is too small
+        return False
+    elif np.any(np.min(img, axis=0)):  #object extends an entire row
+        return False
+    elif np.any(np.min(img, axis=1)):  #object extends an entire column
         return False
     else:
         return True
