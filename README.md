@@ -1,5 +1,4 @@
-# Signed Distance Function Prediction
-
+# Geometry Encoding for Numerical Simulations
 
 This repo contains the accompnaying code for the paper **Geometry Encoding for Numerical Simulations**. The paper outlines 
   particular requirements of a specific geometry encoding with suitable for carrying out numerical simulations 
@@ -11,12 +10,12 @@ This repo contains the accompnaying code for the paper **Geometry Encoding for N
   - *processor*: receives a binary square img as input, and returns the SDF. 
   - *compressor*: receives output of processor and generate an encoding with a 8x reduction in size.
   - *evaluator*: receives the output of processor or compressor, as well as random a list of (x, y) and generates
-               the value of SDf at those points.  
+               the value of SDF at those points.  
 
-## Requirements
+### requirements
 see `requirements.txt`
 
-## Data generation  
+### data generation  
  The processor and compressor networks are trained using a dataset containing primitive objects including circle, 
  rectangle, diamond and polygon. The analytical expression of the SDF of these primitive geometries are 
  computed on a `[-1,1] x [-1,1]` domain. The initial batch of objects are then augmented in two ways:
@@ -34,7 +33,7 @@ see `requirements.txt`
  - `--data-folder`: folder where data are stored, default= `data/datasets/`
  - `--dataset-id`: name of dataset, default= `all128`
  
-## training 
+### training 
 For training the processor network run `python main.py -mode train --network-id $NETWORK_ID`. 
 The last argument refers to the name of network to be used. See `src/network_lib.py` for the list of available networks.
 Recall the processor has to be a UNet.
@@ -67,7 +66,8 @@ Example:
 
 `python main.py -mode train --model-flag compressor --network-id AE4 --data-network-id UNet2_test1 --save-name test1` (to train compressor)
 
-## test and visualization
+Training logs are stored in `outputs/runs` and one can track the training progress using tensorboard.
+### test and visualization
 We run the model in `test` mode to  generate data on the train, test and exotic datasets.
 
 Optional arguments include:
