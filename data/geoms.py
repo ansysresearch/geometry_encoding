@@ -34,61 +34,57 @@ class Geom:
         new_copy.sdf = self.sdf
         return new_copy
 
-    # symbolic approach to compute sdf, will be populated in the children class.
     def compute_sdf(self):
+        """
+        symbolic approach to compute sdf, will be populated in the children class.
+        """
         raise(NotImplementedError("Parent class does not have compute_sdf method."))
 
-    # evaluate signed distance function at point x and y.
-    # x and y can be 2d numpy arrays.
-    # for this to work properly, we need a dictionary that specifies mapping
-    # from sympy functions to numpy functions.
     def lambdified_sdf(self):
+        """
+        to evaluate signed distance function at point x and y.
+        we need a dictionary that specifies mapping
+        from sympy functions to numpy functions.
+        """
         return lambdify([self.x, self.y], self.sdf, modules=SIMPY_2_NUMPY_DICT)
 
     def eval_sdf(self, x, y, z=None):
         """
         evaluate sign distance function at point (x,y, [z]) .
-        ** we need to introduce z to keep the same function signature for the children class Geom3.
-
-        :param x: x-coordinate, np.array
-        :param y: y-coordinate, np.array
-        :param z: z-coordinate. None for 2d geometries, or np.array for 3d geometries
-        :return: sdf value, np.array
+        (we need to introduce z to keep the same function signature for the children class Geom3).
         """
         sdf_lambdify = self.lambdified_sdf()
         if z is not None:
             raise(ValueError("z should be loaded only for 3d geometry."))
         return sdf_lambdify(x, y)
 
-    # plot binary and sdf images.
     def plot_sdf(self, x, y, xticks=(-1, 1), yticks=(-1, 1), plot_eikonal=False):
+        """
+        plot binary and sdf images.
+        """
         sdf = self.eval_sdf(x, y)
         img = sdf < 0
         plot_sdf(img, sdf, xticks=xticks, yticks=yticks, plot_eikonal=plot_eikonal)
 
     def translate(self, t):
         """
-        move in the direction of the vector t[0], t[1]
-
-        :param t: translation vector
-        :return: translated object.
+        move object in the direction of the vector t
+        Args
+            t(list of float): translation vector
         """
         sub_dict = {self.x: self.x - t[0], self.y: self.y - t[1]}
         self.sdf = self.sdf.subs(sub_dict)
         return self
 
-    # rotate with angle th (in radian) counter-clockwise
-    # if we change both coordinate at the same time, something weird happens.
-    # the second coordinate gets values of already changed first coordinate.
+
     def rotate(self, th):
         """
         rotate with angle th (in radian) counter-clockwise
-        ** if we change both coordinate at the same time, something weird happens.
-        ** the second coordinate gets values of already changed first coordinate.
-        ** hence w is introduced
-
-        :param th: angle of rotation
-        :return: rotated object
+        if we change both coordinate at the same time, something weird happens.
+        the second coordinate gets values of already changed first coordinate.
+        hence an intermediate w is introduced
+        Args
+            th(float): angle of rotation
         """
         w = Symbol('w')
         sub_dict_1 = {self.x: np.cos(th) * self.x + np.sin(th) * w}
@@ -104,8 +100,8 @@ class Geom:
         scale by s in x and y directions.
         use the trick http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/
 
-        :param s: scaling factor
-        :return: scaled object
+        Args
+            s(float): scaling factor
         """
         sub_dict = {self.x: self.x / s, self.y: self.y / s}
         self.sdf = self.sdf.subs(sub_dict) * s
@@ -114,10 +110,9 @@ class Geom:
     def elongate(self, h, along="x"):
         """
         elongate an object
-
-        :param h: elongation factor
-        :along : axis of alongation
-        :return: elongated object
+        Args:
+            h (float): elongation factor
+            along (string, optional) : axis of alongation, default 'x'
         """
         if along == "x":
             sub_dict = {self.x: self.x - Min(Max(self.x, -h), h)}
@@ -131,14 +126,29 @@ class Geom:
         return self
 
     def roundify(self, r):
+        """
+        roundify all corners
+        Args
+            r (float): radius of randification
+        """
         self.sdf -= r
         return self
 
     def onion(self, th):
+        """
+        onionize
+        Args
+            th (float): paramter of onionization
+        """
         self.sdf = abs(self.sdf) - th
         return self
 
     def union(self, other):
+        """
+        take the union of two objects
+        Args
+            other (Geom): other object
+        """
         union_geom = self.copy()
         union_geom.sdf = Min(self.sdf, other.sdf)
         union_geom.params = [self, other]
@@ -215,9 +225,10 @@ class nGon(Geom):
         return "Shape with %d sides" %len(self.params)
 
     def compute_sdf(self):
-
-        # this function computes distance of point (x,y) from the line segment between (x1, y1) and (x2, y2)
-        # see https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+        """
+        this function computes distance of point (x,y) from the line segment between (x1, y1) and (x2, y2)
+        see https://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+        """
         def compute_distance_from_line(x, y, x1, y1, x2, y2):
             A = x - x1
             B = y - y1
@@ -235,8 +246,10 @@ class nGon(Geom):
             dy = y - yy
             return sqrt(dx * dx + dy * dy)
 
-        # returns 1 for points inside shape and 0 otherwise.
         def get_sign():
+            """
+            returns 1 for points inside shape and 0 otherwise.
+            """
             params = self.params.copy()
             params.append(params[0])
             sgn = 1
@@ -265,67 +278,34 @@ class nGon(Geom):
         self.sdf = f_min3(Array(d)) * (1 - 2 * sgn1)
 
 
-def compute_sdf_from_img1(img):
-    assert np.ndim(img) == 2
-    assert img.shape[0] == img.shape[1]
-    sdf = np.zeros(img.shape)
-    m, n = sdf.shape
-    img_b_idx = np.array(np.where(img == 0)).T
-    img_w_idx = np.array(np.where(img == 1)).T
-    for i in range(m):
-        for j in range(n):
-            if img[i, j] == 1:
-                sdf[i, j] = - np.min(np.sqrt(((img_b_idx - [i, j]) ** 2).sum(axis=1)))
-            elif img[i, j] == 0:
-                sdf[i, j] = np.min(np.sqrt(((img_w_idx - [i, j]) ** 2).sum(axis=1)))
-            else:
-                raise("ERROR")
-    sdf = sdf / (img.shape[0] / 2)
-    return sdf
+# def compute_sdf_from_img1(img):
+#     assert np.ndim(img) == 2
+#     assert img.shape[0] == img.shape[1]
+#     sdf = np.zeros(img.shape)
+#     m, n = sdf.shape
+#     img_b_idx = np.array(np.where(img == 0)).T
+#     img_w_idx = np.array(np.where(img == 1)).T
+#     for i in range(m):
+#         for j in range(n):
+#             if img[i, j] == 1:
+#                 sdf[i, j] = - np.min(np.sqrt(((img_b_idx - [i, j]) ** 2).sum(axis=1)))
+#             elif img[i, j] == 0:
+#                 sdf[i, j] = np.min(np.sqrt(((img_w_idx - [i, j]) ** 2).sum(axis=1)))
+#             else:
+#                 raise("ERROR")
+#     sdf = sdf / (img.shape[0] / 2)
+#     return sdf
+#
+#
+# def compute_sdf_from_img2(img):
+#     assert np.ndim(img) == 2
+#     assert img.shape[0] == img.shape[1]
+#     scipy_sdf = -distance_transform_edt(img) + distance_transform_edt(1 - img)
+#     scipy_sdf /= (img.shape[0] // 2)
+#     return scipy_sdf
 
-
-def compute_sdf_from_img2(img):
-    assert np.ndim(img) == 2
-    assert img.shape[0] == img.shape[1]
-    scipy_sdf = -distance_transform_edt(img) + distance_transform_edt(1 - img)
-    scipy_sdf /= (img.shape[0] // 2)
-    return scipy_sdf
-
-
-def merge_geoms(geoms, x, y):
-    sdf_pnts_vec = [geom.eval_sdf(x, y) for geom in geoms]
-    sdf_pnts = np.minimum.reduce(sdf_pnts_vec)
-    img_pnts = (sdf_pnts < 0).astype(float)
-    return img_pnts, sdf_pnts
-
-
-if __name__ == "__main__":
-    EPS = 1e-2
-    Nx, Ny = 200, 200
-    x, y = np.meshgrid(np.linspace(-1, 1, Nx), np.linspace(-1, 1, Ny))
-    geoms = [Circle(0.5),
-             Circle(0.5).translate((0.5, 0.2)).scale(0.3),
-             nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]),
-             nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]).translate((0.4, .3)).rotate(1.),
-             Rectangle([0.2, 0.3]),
-             Rectangle([0.2, 0.3]).translate((0.7, 0.7)),
-             Diamond([0.2, 0.3]).scale(1.5),
-             CrossX([0.5, 0.1]),
-             nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.5]]),
-             ]
-    # for g in geoms:
-    #     g.plot_sdf(x, y, plot_eikonal=True)
-
-    geom1 = Rectangle([0.5, 0.2])
-    geom2 = nGon([[0.2, 0.2], [-0.5, 0.5], [-0.2, -0.8], [0.25, -0.75]])
-    geom3 = geom2.copy().rotate(0.3).translate((0.3, 0.2))
-    geoms = [geom1, geom2, geom3]
-    for g in geoms:
-        sdf = g.eval_sdf(x, y)
-        img = sdf < 0
-        plot_sdf(img, sdf, plot_eikonal=True, show=False)
-
-    geom4 = geom1.union(geom3).union(geom2)
-    sdf4 = geom4.eval_sdf(x, y)
-    img4 = sdf4 < 0
-    plot_sdf(img4, sdf4, plot_eikonal=True, show=True)
+# def merge_geoms(geoms, x, y):
+#     sdf_pnts_vec = [geom.eval_sdf(x, y) for geom in geoms]
+#     sdf_pnts = np.minimum.reduce(sdf_pnts_vec)
+#     img_pnts = (sdf_pnts < 0).astype(float)
+#     return img_pnts, sdf_pnts

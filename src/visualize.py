@@ -78,6 +78,3 @@ def viz(args):
     # showing true/predicted sdf on the exotic shape set (which are not seen nor similar to the seen data).
     exotic_prediction_file_name = os.path.join(prediction_save_dir, "exotic_predictions_" + save_name + ".npy")
     plot_prediction_results(exotic_prediction_file_name)
-
-    # test_interpolation_file_name = prediction_save_dir + "test_interpolate_data" + save_name + ".npy"
-    # plot_interpolation_results(test_interpolation_file_name)

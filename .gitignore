@@ -1,5 +1,8 @@
 # data folder
-data2/dataset*
+data/datasets
+data/deeponet_data_all128
+data/MNIST
+
 outputs/
 
 # models and data
@@ -8,38 +11,6 @@ outputs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
-*$py.class
-
-# Distribution / packaging
-checkpoints/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-wheels/
-pip-wheel-metadata/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-.python-version
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
-__pypackages__/
-
 
 # Environments
 .env

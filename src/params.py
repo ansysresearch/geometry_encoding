@@ -2,12 +2,12 @@ import argparse
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description='SDF 2d')
+    parser = argparse.ArgumentParser(description='geometry encoing')
 
     # mode
     parser.add_argument('-m', '-mode', dest='mode', type=str, required=True,
-                        help='choose either of "train", "test", "test exotic" or "visualize"')
-    parser.add_argument('--model-flag', dest='model_flag', type=int, default=0, choices=[0, 1, 2, 3, 4, 5],
+                        help='choose either of `data`, `train`, `test`, `visualize`')
+    parser.add_argument('--model-flag', dest='model_flag', type=str, default="processor", choices=["processor", "compressor"],
                         help='see comments under src/utils/prepare_training_data function')
     # data parameters
     parser.add_argument('--n-obj', dest='n_obj', type=int, default=500,
@@ -18,12 +18,10 @@ def parse_arguments():
                         help='folder where data are stored')
     parser.add_argument('--dataset-id', dest='dataset_id', type=str, default='all',
                         help='name of dataset')
-    parser.add_argument('--data-network-id', dest='data_network_id', type=str,
-                        help='processor or compressor network when generating data for training compressor or evaluator')
 
     # network parameters
-    parser.add_argument('--network-id', dest='net_id', type=str, default='UNet1',
-                        help='id of the network. see network/network_lib.py')
+    parser.add_argument('--network-id', dest='net_id', type=str, default='UNet2',
+                        help='id of the network. see src/network_lib.py')
     parser.add_argument('--data-type', dest='dtype', type=str, default='float32', choices=['float32, float64'],
                         help='data type can be either float32 or float 64')
 
@@ -56,33 +54,6 @@ def parse_arguments():
                         help='number of predictions during testing')
     parser.add_argument('--save-name', dest='save_name', type=str, default="",
                         help='tag added to runs files')
-    parser.add_argument('--deeponet-npoints-per-pass', dest='deeponet_npoints_per_pass', type=int, default=10,
-                        help='whatever')
+    parser.add_argument('--data-network-id', dest='data_network_id', type=str,
+                        help='processor network name when generating data for training compressor')
     return parser.parse_args()
-
-
-# data parameters
-# NUMBER_OBJECTS = 500
-# IMAGE_RESOLUTION = 128
-# DATA_FOLDER      = 'data/datasets/'
-# DATASET_ID       = 'all' + str(IMAGE_RESOLUTION)
-#
-# # training parameters
-# NETWORK_ID                     = 'UNet2'  # see network/network_lib.py for more details.
-# NUM_EPOCHS                     = 100
-# SAVE_EVERY                     = 20
-# BATCH_SIZE                     = 10
-# DATA_TYPE                      = torch.float32
-# LEARNING_RATE                  = 5e-4
-# NETWORK_SAVE_NAME              = NETWORK_ID + '_' + DATASET_ID
-# VALIDATION_FRACTION            = 0.2
-# LEARNING_RATE_PLATEAU_PATIENCE = 3
-# LEARNING_RATE_PLATEAU_FACTOR   = 0.2
-# MINIMUM_LEARNING_RATE          = 1e-6
-# CHECKPOINTS_DIRECTORY          = 'checkpoints/'
-# NETWORK_SAVE_DIRECTORY         = CHECKPOINTS_DIRECTORY + 'networks/'
-# RUNS_SAVE_DIRECTORY            = CHECKPOINTS_DIRECTORY + 'runs/'
-#
-# # prediction parameters
-# COMPUTE_PREDICTIONS_NUM   = 10
-# PREDICTION_SAVE_DIRECTORY = CHECKPOINTS_DIRECTORY + 'predictions/'

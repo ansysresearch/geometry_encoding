@@ -6,6 +6,13 @@ from data.geoms3 import Sphere, Ellipsoid, Capsule, Cylinder, Box, RoundedBox, H
 
 
 def generate_one_geometry(obj_list, xmax=0.8, ymax=0.8):
+    """
+    randomly generate a geometry from the list `obj_list`.
+    Args:
+        obj_list (list of str): a list of possible objects. could be 2D or 3D objects
+        xmax, ymax (float): paramter to control maximum possible size of object.
+    return: an instance of a :class:geoms.Geom
+    """
     obj_id = np.random.choice(obj_list)
     if obj_id == "Circle":
         r = max(0.2, np.random.random() * xmax)
@@ -79,6 +86,10 @@ def generate_one_geometry(obj_list, xmax=0.8, ymax=0.8):
 
 
 def augment_geometry(geom, mode="all2"):
+    """
+    randomly modify an instance of :class:geoms.Geom
+    returns modified object
+    """
     if mode == "all2":
         mode = np.random.choice(["rotate", "translate", "scale"])
     elif mode == "all3":
@@ -116,25 +127,11 @@ def augment_geometry(geom, mode="all2"):
         raise(ValueError("Mode %s is not recognized"%mode))
 
 
-# def augment_geometry_2(sdfs, n_obj=200):
-#     idx = np.random.randint(0, len(sdfs), n_obj)
-#     r = np.random.random((n_obj, 1, 1)) * 0.1 + 0.1
-#     sdfs_with_hole = sdfs[idx, :, :].copy()
-#     sdfs_with_hole = abs(sdfs_with_hole) - r
-#     sdfs_updated = np.concatenate([sdfs, sdfs_with_hole])
-#     return sdfs_updated
-# 
-# 
-# def augment_geometry_3(sdfs, n_obj=200):
-#     idx = np.random.randint(0, len(sdfs), n_obj)
-#     r = np.random.random((n_obj, 1, 1)) * 0.05 + 0.05
-#     sdfs_rounded = sdfs[idx, :, :].copy()
-#     sdfs_rounded = sdfs_rounded - r
-#     sdfs_updated = np.concatenate([sdfs, sdfs_rounded])
-#     return sdfs_updated
-
-
-def generate_geometries(n_obj=500, n_aug=3, obj_list=("Circle", "Rectangle", "Diamond", "Cross", "nGon")):
+def generate_geometries(n_obj=500, n_aug=3, obj_list=("Circle", "Rectangle", "Diamond", "nGon")):
+    """
+    generate a random list of `n_obj` objects from the list `obj_list`.
+    then added `n_aug` many augmentations.
+    """
     geoms = [generate_one_geometry(obj_list) for _ in range(n_obj)]
 
     # geoms is centered at origin. we randomly translate all geoms
@@ -147,28 +144,19 @@ def generate_geometries(n_obj=500, n_aug=3, obj_list=("Circle", "Rectangle", "Di
     return geoms_all
 
 
-def combine_geometries(geoms, n1, n2, x, y):
-    # n1 is number of geomtries in each combination
-    # n2 is the number of combinations
-    # e.g. n1=2, n3=3 which give [(g1, g2), (g3,g4), (g5, g6)]
-
-    random_idx = np.random.randint(0, len(geoms)-1, n1*n2).reshape(n2, n1)
-    combined_geoms = []
-    for idx in random_idx:
-        combined_geoms.append([geoms[i] for i in idx])
-
-    combined_sdf = []
-    for geom in combined_geoms:
-        sdf = [g.eval_sdf(x, y) for g in geom]
-        sdf = np.min(sdf, axis=0)
-        combined_sdf.append(sdf)
-    return combined_geoms, combined_sdf
-
-
 def combine_imgs(imgs, n1, n2):
-    # n1 is number of img in each combination
-    # n2 is the number of combinations
-    # e.g. n1=2, n3=3 which give [(g1, g2), (g3, g4), (g5, g6)]
+    """
+    combine objects of list geoms
+    Args
+        imgs (3d nd.arrays): a list of images
+        n1 (int): number of geometries in each combination
+        n2 (int): number of combinations
+
+    e.g. if imgs = [g1, g2, g3, g4], n1=2, n3=3, then one possible outcome is [(g1, g2), (g1,g4), (g2, g4)]
+
+    returns
+        3d nd.arrays of combines images.
+    """
     random_idx = np.random.randint(0, len(imgs)-1, n1*n2).reshape(n2, n1)
     combined_imgs = []
     for idx in random_idx:
@@ -178,103 +166,12 @@ def combine_imgs(imgs, n1, n2):
     return np.array(combined_imgs)
 
 
-def sample_near_geometry(geoms, n_sample, lb=-np.inf, ub=np.inf):
-    sample_pnts = []
-    if n_sample == 0:
-        return sample_pnts
-    while True:
-        # generate two long random vectors,
-        x = np.random.random(10000) * 2 - 1
-        y = np.random.random(10000) * 2 - 1
-
-        # compute sdf
-        if isinstance(geoms, list):
-            sdf = np.min([geom.eval_sdf(x, y) for geom in geoms], axis=0)
-        else:
-            sdf = geoms.eval_sdf(x, y)
-
-        # find those that satisfy condition  lb < sdf < ub
-        mask = np.logical_and(sdf < ub, sdf > lb)
-        new_pnts = np.array([x[mask], y[mask], sdf[mask]])
-
-        # update point matrix
-        if len(sample_pnts) == 0:
-            sample_pnts = new_pnts
-        else:
-            sample_pnts = np.concatenate([sample_pnts, new_pnts], axis=1)
-        if sample_pnts.shape[1] >= n_sample:
-            break
-
-    return sample_pnts[:, :n_sample]
-
-
-def filter_sdfs(sdf):
-    if np.mean(sdf < 0) > 0.85: #object is too big
-        return False
-    elif np.mean(sdf < 0) < 0.1: #object is too small
-        return False
-    elif np.any(np.min(sdf < 0, axis=0)):  #object extends an entire row
-        return False
-    elif np.any(np.min(sdf < 0, axis=1)):  #object extends an entire column
-        return False
-    else:
-        return True
-
-
 def filter_imgs(img):
-    if np.mean(img) > 0.85: #object is too big
-        return False
-    elif np.mean(img) < 0.1: #object is too small
-        return False
-    elif np.any(np.min(img, axis=0)):  #object extends an entire row
-        return False
-    elif np.any(np.min(img, axis=1)):  #object extends an entire column
-        return False
-    else:
-        return True
-
-
-# def generate_offgrid_data(obj_list, img_resolution=100, n_obj=50, n_points=1000, save_name=None):
-#     up_factor = 4
-#     img_fine_resolution = img_resolution * up_factor
-#     imgs, sdfs = generate_data(obj_list, img_resolution=img_fine_resolution, n_obj=n_obj)
-#     x = np.linspace(-1, 1, img_fine_resolution)
-#     y = np.linspace(-1, 1, img_fine_resolution)
-#
-#     pnts = []
-#     for sdf in sdfs:
-#         idx = np.random.randint(0, img_fine_resolution-1, n_points)
-#         idy = np.random.randint(0, img_fine_resolution-1, n_points)
-#         xi = x[idx]
-#         yi = y[idy]
-#         sdfi = sdf[idx, idy]
-#         pnts.append([xi, yi, sdfi])
-#
-#     pnts = np.array(pnts)
-#     if save_name:
-#         np.save(data_folder + "pnt_" + save_name + ".npy", pnts)
-#
-#     return pnts
-
-
-# def generate_data_scipy_method(file_name):
-#     imgs = np.load(data_folder + "img_" + file_name + ".npy")
-#     np.save(data_folder + "img_scipy_" + file_name + ".npy", imgs)
-#
-#     scipy_sdfs = []
-#     for img in imgs:
-#         s1, s2 = img.shape
-#         assert s1 == s2
-#         assert np.all(np.unique(img) == [0., 1.])
-#         scipy_sdf = -distance_transform_edt(img) + distance_transform_edt(1 - img)
-#         scipy_sdf /= (s1 // 2)
-#         scipy_sdfs.append(scipy_sdf)
-#     scipy_sdfs = np.array(scipy_sdfs)
-#     np.save(data_folder + "sdf_scipy_" + file_name + ".npy", scipy_sdfs)
-#
-#     pnts = np.load(data_folder + "pnt_" + file_name + ".npy")
-#     np.save(data_folder + "pnt_scipy_" + file_name + ".npy", pnts)
-
-
-
-
+    """
+    filter objects that are too outlier.
+    """
+    too_big   = np.mean(img) > 0.85
+    too_small = np.mean(img) < 0.1
+    contains_full_row = np.any(np.min(img, axis=0))
+    contains_full_col = np.any(np.min(img, axis=1))
+    return not (too_big or too_small or contains_full_row or contains_full_col)

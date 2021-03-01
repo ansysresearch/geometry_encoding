@@ -1,8 +1,4 @@
-from src import (parse_arguments,
-                 generate_dataset,
-                 train,
-                 test,
-                 viz)
+from src import parse_arguments, generate_dataset, train, test
 
 args = parse_arguments()
 mode = args.mode
@@ -14,8 +10,6 @@ elif mode == "train":
     train(args)
 elif mode == "test":
     test(args)
-elif mode == "visualize":
-    viz(args)
 else:
     raise(ValueError("Mode %s is not recognized" % mode))
 

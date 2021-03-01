@@ -1,5 +1,5 @@
 import numpy as np
-from sympy import Min, Max, sqrt, Function, sin, cos
+from sympy import Min, Max, sqrt, Function
 from sympy.utilities.lambdify import implemented_function
 
 
