@@ -2,8 +2,8 @@ import os
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from src import (read_data, get_network, TrainLogger, get_dtype, get_device,
-                 get_loss_func, get_save_name, get_optimizer)
+from src.network_lib import get_network
+from src.utils import TrainLogger, read_data, get_device, get_dtype, get_optimizer, get_loss_func, get_save_name
 
 
 def train(args):
@@ -32,6 +32,7 @@ def train(args):
     net = get_network(network_id).to(device=device, dtype=dtype)
     optimizer, scheduler = get_optimizer(net, args)
 
+    # setup loggers
     tf_writer = SummaryWriter(os.path.join(runs_save_dir, save_name))
     train_log_writer = TrainLogger(os.path.join(runs_save_dir, save_name + "_training_logs"), optimizer)
 

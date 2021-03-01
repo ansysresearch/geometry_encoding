@@ -1,12 +1,10 @@
 import os
 import sys
-import cv2
 import torch
-import pickle
 import warnings
 import datetime
 import numpy as np
-from src import get_network
+from src.network_lib import get_network
 from torch.utils.data import TensorDataset
 
 
@@ -75,7 +73,9 @@ def get_loss_func(loss_str):
 
 
 def find_best_gpu():
-    r""" this function finds the GPU with most free memory."""
+    r"""
+    this function finds the GPU with most free memory.
+    """
     if 'linux' in sys.platform and torch.cuda.device_count() > 1:
         os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
         memory_available = [int(x.split()[2]) for x in open('tmp', 'r').readlines()]
@@ -99,12 +99,12 @@ def get_dtype(args):
 
 def get_save_name(args):
     now = datetime.datetime.now()
-    dataset_id = args.dataset_id + str(args.img_res)
+    dataset_id = args.dataset_id
     network_id = args.net_id
     save_name_tag = args.save_name
     if len(save_name_tag) == 0:
         save_name_tag = '_'.join(map(str, [now.month, now.day, now.hour, now.minute]))
-    save_name = network_id + '_' + dataset_id + '_' + save_name_tag
+    save_name = network_id + '_' + save_name_tag
     return save_name
 
 
@@ -149,7 +149,8 @@ def prepare_training_data(X, Y, args):
     data_network_id = args.data_network_id
     if model_flag == "processor":
         return X, Y
-    else:
+
+    if model_flag == "compressor":
         dtype = get_dtype(args)
         device = get_device(args, get_best_cuda=False)
 
@@ -171,11 +172,16 @@ def prepare_training_data(X, Y, args):
         with torch.no_grad():
             Y_processor = batch_run_model(data_network_model, X, device, dtype)
             return Y_processor, Y_processor
+    else:
+        raise(ValueError("model flag can be only `processor` or `compressor`."))
 
 
 def read_data(args, end_suffix=""):
+    """
+    read dataset and prepare training data for processor or compressor network
+    """
     val_frac = args.val_frac
-    dataset_id = args.dataset_id + str(args.img_res)
+    dataset_id = args.dataset_id
     data_folder = args.data_folder
     img_res = args.img_res
     img_file_name = os.path.join(data_folder, "img_" + dataset_id + end_suffix + ".npy")

@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from src import get_save_name
+from src.utils import get_save_name
 
 
 def plot_prediction_results(file_name, show=True, colorbar=False):
@@ -77,4 +77,5 @@ def viz(args):
 
     # showing true/predicted sdf on the exotic shape set (which are not seen nor similar to the seen data).
     exotic_prediction_file_name = os.path.join(prediction_save_dir, "exotic_predictions_" + save_name + ".npy")
-    plot_prediction_results(exotic_prediction_file_name)
+    if os.path.isfile(exotic_prediction_file_name):
+        plot_prediction_results(exotic_prediction_file_name)

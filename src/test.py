@@ -1,7 +1,9 @@
 import os
 import torch
 import numpy as np
-from src import read_data, get_save_name, get_dtype, get_network, viz
+from src.network_lib import get_network
+from src.visualize import viz
+from src.utils import read_data, get_dtype, get_save_name
 
 
 def compute_prediction(args, ds):
@@ -48,9 +50,12 @@ def test(args):
     np.save(test_prediction_file_name, test_data)
 
     # evaluating on exotic dataset
-    exotic_ds, _ = read_data(args, end_suffix="_exotic")
-    exotic_data = compute_prediction(args, exotic_ds)
-    exotic_prediction_file_name = os.path.join(prediction_save_dir, "exotic_predictions_" + save_name + ".npy")
-    np.save(exotic_prediction_file_name, exotic_data)
+    try:
+        exotic_ds, _ = read_data(args, end_suffix="_exotic")
+        exotic_data = compute_prediction(args, exotic_ds)
+        exotic_prediction_file_name = os.path.join(prediction_save_dir, "exotic_predictions_" + save_name + ".npy")
+        np.save(exotic_prediction_file_name, exotic_data)
+    except FileNotFoundError:
+        pass
 
     viz(args)

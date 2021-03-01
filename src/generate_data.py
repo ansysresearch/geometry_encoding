@@ -21,7 +21,7 @@ def generate_dataset(args, test_dataset=False, show=False):
     """
     obj_list = _obj_list_2d
     n_obj = args.n_obj // 10 if test_dataset else args.n_obj
-    dataset_id = args.dataset_id + str(args.img_res)
+    dataset_id = args.dataset_id
     save_name = dataset_id + "_test" if test_dataset else dataset_id
     img_res = args.img_res
     data_folder = args.data_folder
@@ -48,7 +48,6 @@ def generate_dataset(args, test_dataset=False, show=False):
     # compute the numerical value of sdf
     numerical_imgs = []
     numerical_sdfs = []
-    random_points = []
     for img in imgs:
         numerical_sdf = compute_numerical_sdf(img)
         numerical_imgs.append(numerical_sdf < 0)

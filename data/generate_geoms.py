@@ -2,14 +2,13 @@ import copy
 import numpy as np
 
 from data.geoms import Circle, nGon, Rectangle, Diamond, CrossX
-from data.geoms3 import Sphere, Ellipsoid, Capsule, Cylinder, Box, RoundedBox, HollowBox, Torus, Octahedron
 
 
 def generate_one_geometry(obj_list, xmax=0.8, ymax=0.8):
     """
     randomly generate a geometry from the list `obj_list`.
     Args:
-        obj_list (list of str): a list of possible objects. could be 2D or 3D objects
+        obj_list (list of str): a list of possible objects.
         xmax, ymax (float): paramter to control maximum possible size of object.
     return: an instance of a :class:geoms.Geom
     """
@@ -37,48 +36,6 @@ def generate_one_geometry(obj_list, xmax=0.8, ymax=0.8):
         w = max(0.2, np.random.random() * xmax)
         r = max(0.2, np.random.random() * xmax * 0.3)
         geom = CrossX([w, r])
-    elif obj_id == "Sphere":
-        r = max(0.2, np.random.random() * xmax)
-        geom = Sphere(r)
-    elif obj_id == "Ellipsoid":
-        r1 = max(0.2, np.random.random() * xmax)
-        r2 = max(0.2, np.random.random() * xmax)
-        geom = Ellipsoid([r1, r2])
-    elif obj_id == "Capsule":
-        w = max(0.2, np.random.random() * xmax)
-        l = max(0.2, np.random.random() * xmax)
-        d = max(0.2, np.random.random() * xmax)
-        r = max(0.2, np.random.random() * xmax * 0.3)
-        geom = Capsule([-w, -l, -d, w, l, d, r])
-    elif obj_id == "Cylinder":
-        h = max(0.2, np.random.random() * xmax)
-        r = max(0.2, np.random.random() * xmax)
-        geom = Cylinder([h, r])
-    elif obj_id == "Box":
-        w = max(0.2, np.random.random() * xmax)
-        l = max(0.2, np.random.random() * xmax)
-        d = max(0.2, np.random.random() * xmax)
-        geom = Box([w, l, d])
-    elif obj_id == "RoundedBox":
-        w = max(0.2, np.random.random() * xmax)
-        l = max(0.2, np.random.random() * xmax)
-        d = max(0.2, np.random.random() * xmax)
-        r = min([w/2, l/2, d/2, max(0.2, np.random.random() * xmax * 0.3)])
-        geom = RoundedBox([w, l, d, r])
-    elif obj_id == "HollowBox":
-        w = max(0.2, np.random.random() * xmax)
-        l = max(0.2, np.random.random() * xmax)
-        d = max(0.2, np.random.random() * xmax)
-        e = min([w/2, l/2, d/2, max(0.2, np.random.random() * xmax * 0.3)])
-        geom = HollowBox([w, l, d, e])
-    elif obj_id == "Torus":
-        w = max(0.2, np.random.random() * xmax)
-        l = max(0.2, np.random.random() * xmax)
-        l = min(w, l)
-        geom = Torus([w, l])
-    elif obj_id == "Octahedron":
-        a = max(0.2, np.random.random() * xmax)
-        geom = Octahedron([a])
     else:
         print(obj_id)
         raise("object %s is not yet implemented" % str(obj_id))
