@@ -270,6 +270,48 @@ class DeepONet5(DeepONet):
                          with_xy_channels=True)
 
 
+class Interp2D(torch.nn.Module):
+    def __init__(self, n, xmin=-1, xmax=1, ymin=-1, ymax=1):
+        super().__init__()
+        self.x = torch.linspace(xmin, xmax, n, requires_grad=True)
+        self.y = torch.linspace(ymin, ymax, n, requires_grad=True)
+
+    def check_inputs(self, f, xy):
+        assert f.ndim == 3, "expect f to be a tensor of ndim 3"
+        assert f.shape[1] == f.shape[2], "expect f to be a square tensor"
+        assert xy.ndim == 3, "expect xy to be a tensor of ndim 3"
+        assert xy.shape[0] == f.shape[0], "batch dimension should be indentical"
+
+    def get_indices(self, xp, yp):
+        idx = torch.searchsorted(self.x.detach(), xp.detach(), right=False)
+        idy = torch.searchsorted(self.y.detach(), yp.detach(), right=False)
+        return idx, idy
+
+    def forward(self, f, xy):
+        self.check_inputs(f, xy)
+        xp = xy[..., 0].contiguous()
+        yp = xy[..., 1].contiguous()
+        ix, iy = self.get_indices(xp, yp)
+        x0 = self.x[ix - 1]
+        x1 = self.x[ix]
+        y0 = self.y[iy - 1]
+        y1 = self.y[iy]
+
+        bsize = f.shape[0]
+        f00 = torch.stack([f[i, ix[i, ...] - 1, iy[i, ...] - 1] for i in range(bsize)])
+        f01 = torch.stack([f[i, ix[i, ...] - 1, iy[i, ...]] for i in range(bsize)])
+        f10 = torch.stack([f[i, ix[i, ...], iy[i, ...] - 1] for i in range(bsize)])
+        f11 = torch.stack([f[i, ix[i, ...], iy[i, ...]] for i in range(bsize)])
+
+        c1 = (xp - x0) / (x1 - x0)
+        c2 = (yp - y0) / (y1 - y0)
+        dx = f10 - f00
+        dy = f01 - f00
+        sol = f00 + c1 * dx + c2 * dy + c1 * c2 * (f11 - dx - dy - f00)
+        return sol
+
+
+
 def get_network(network_id):
     n_channels_in, n_channels_out = 1, 1
     if network_id == "UNet1":

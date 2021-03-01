@@ -141,18 +141,18 @@ def train_deeponet(args):
         tf_writer.add_scalar("Loss/train", epoch_loss, epoch)
 
         epoch_lossv = 0
-        net.eval()
-        for xbv, xbpv, ybpv in val_loader:
-            points_idx = torch.randint(0, n_points_tot, (n_points_per_forward_pass,))
-            xbv = xbv.to(device=device, dtype=dtype)
-            xbpv = xbpv[:, points_idx, :].to(device=device, dtype=dtype)
-            ybpv = ybpv[:, points_idx].to(device=device, dtype=dtype)
-            predv = net(xbv, xbpv)
-            lossv = loss_fn(predv, ybpv)
-            epoch_lossv += lossv.item()
-
-        epoch_lossv /= len(val_loader)
-        scheduler.step(epoch_lossv)
+        # net.eval()
+        # for xbv, xbpv, ybpv in val_loader:
+        #     points_idx = torch.randint(0, n_points_tot, (n_points_per_forward_pass,))
+        #     xbv = xbv.to(device=device, dtype=dtype)
+        #     xbpv = xbpv[:, points_idx, :].to(device=device, dtype=dtype)
+        #     ybpv = ybpv[:, points_idx].to(device=device, dtype=dtype)
+        #     predv = net(xbv, xbpv)
+        #     lossv = loss_fn(predv, ybpv)
+        #     epoch_lossv += lossv.item()
+        #
+        # epoch_lossv /= len(val_loader)
+        # scheduler.step(epoch_lossv)
 
         tf_writer.add_scalar("Loss/val", epoch_lossv, epoch)
 
